@@ -1,8 +1,8 @@
 {
   "chainId": 4663,
   "network": "Robinhood Chain mainnet",
-  "deployedAt": "2026-09-16T18:24:38.888Z",
-  "commit": "0d1018ec15c3b4d95bdee5895f5fcd115857daac",
+  "deployedAt": "2026-09-16T18:43:16.381Z",
+  "commit": "bef46c5dc3f3cb29c3e5c3e431ebbfb3670b6cab",
   "deployer": "0x589df831797e3891924397d7f99261a1cf70ce72",
   "contracts": {
     "ShareExactGuard": {
