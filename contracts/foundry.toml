@@ -24,6 +24,4 @@ robinhood = "https://rpc.mainnet.chain.robinhood.com"
 robinhood_testnet = "https://rpc.testnet.chain.robinhood.com"
 
 # Blockscout needs no API key; the placeholder keeps Foundry's parser happy.
-[etherscan]
-robinhood = { key = "${BLOCKSCOUT_KEY}", url = "https://robinhoodchain.blockscout.com/api", chain = 4663 }
-robinhood_testnet = { key = "${BLOCKSCOUT_KEY}", url = "https://explorer.testnet.chain.robinhood.com/api", chain = 46630 }
+
