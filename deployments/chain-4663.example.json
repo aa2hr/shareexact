@@ -1,0 +1,28 @@
+{
+  "chainId": 4663,
+  "network": "Robinhood Chain mainnet",
+  "deployedAt": "2026-09-16T00:00:00Z",
+  "commit": "REPLACE_WITH_GIT_SHA",
+  "contracts": {
+    "ShareExactGuard": {
+      "address": "0xREPLACE",
+      "owner": "0xREPLACE",
+      "corpActionWindow": 7200,
+      "explorer": "https://robinhoodchain.blockscout.com/address/0xREPLACE",
+      "verified": false
+    },
+    "ExactTransfer": {
+      "address": "0xREPLACE",
+      "guard": "0xREPLACE",
+      "explorer": "https://robinhoodchain.blockscout.com/address/0xREPLACE",
+      "verified": false
+    }
+  },
+  "feeds": {
+    "note": "Symbol -> { feed, maxStaleness, decimals } as registered on the guard.",
+    "registered": {}
+  },
+  "proofTransactions": {
+    "exactShareTransfer": "0xREPLACE"
+  }
+}

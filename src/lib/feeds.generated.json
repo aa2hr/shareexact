@@ -1,0 +1,9 @@
+{
+  "source": "unset",
+  "generatedAt": null,
+  "note": "Run `npm run feeds:sync` to populate from the Chainlink feed directory, or set ROBINHOOD_FEEDS. Until then every asset reports NO_FEED and renders without a price, which is intentional: ShareExact does not display a mark it cannot source.",
+  "shape": {
+    "NVDA": { "feed": "0x0000000000000000000000000000000000000000", "maxStaleness": 93600, "decimals": 8 }
+  },
+  "feeds": {}
+}

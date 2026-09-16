@@ -1,0 +1,165 @@
+# ShareExact
+
+[![CI](https://github.com/shareexact/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/shareexact/shareexact/actions/workflows/ci.yml)
+
+**The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
+
+**Concretely:** on a token with a 4x multiplier, someone moving $10,000 of
+stock — 25 shares at $400 — computes 25 raw units the obvious way and sends
+100 shares, $40,000, a $30,000 overshoot. The ERC-20 transfer succeeds. No
+revert, no warning, no way to tell from the receipt.
+
+A Robinhood Stock Token is a plain ERC-20 whose raw unit is not a share. One raw
+unit is `uiMultiplier() / 1e18` underlying shares, and that ratio moves every
+time a dividend is reinvested or the underlying splits. Meanwhile the Chainlink
+feed that prices it publishes 24/5, while the token itself trades 24/7.
+
+So there are two silent failure modes sitting under every product on this chain:
+
+1. **Unit drift.** Anything that quotes shares — a lending market, a basket, a
+   portfolio screen — has to convert to raw units itself, and each one invents
+   its own rounding and its own corporate-action race.
+2. **Confident staleness.** For roughly two thirds of every week the feed is
+   holding a value from the last time the cash market was open. An integration
+   that does not check `updatedAt` renders a Friday price as if it were live,
+   and a risk engine built on that will happily compute a health factor from it.
+
+ShareExact is the layer that makes both of those explicit: a contract, an SDK,
+and a desk that refuses to show a number it cannot source.
+
+---
+
+## What is in here
+
+```
+contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 61 tests
+sdk/           @shareexact/sdk — zero-dependency reader for other protocols
+deployments/   Contract addresses. Empty until something is actually deployed
+src/lib/       Oracle reads, ABI codec, data-state classifier, money path
+src/components/desk/   The desk UI
+docs/          Architecture, deploy runbook, domain setup, security, demo script
+```
+
+### `ShareExactGuard.sol`
+
+A read-only, custody-free state machine. Given a token it answers one question:
+can this price be trusted right now, and why not.
+
+```solidity
+enum DataState { FRESH, STALE, ORACLE_PAUSED, CORP_ACTION, SEQUENCER_DOWN, NO_FEED }
+```
+
+The enum is about **data**, not about the NYSE calendar. A contract cannot know
+it is Saturday. It can know the feed stopped updating, the sequencer is down,
+the issuer paused the oracle, or a multiplier change is imminent — and that is
+all this contract claims to know. Session labelling lives off-chain.
+
+Design constraints it holds to:
+
+- **Observation never reverts; conversion fails closed.** `state()` and
+  `priceOf()` degrade to an explicit state on any third-party failure. But if the
+  multiplier cannot be read, `sharesToRaw`, `rawToShares` and a transfer all
+  revert rather than guess (`usdValue` does not, because a feed prices one raw
+  token and never needs the multiplier) — an unreadable ratio is not evidence of a 1:1 token,
+  and guessing wrong moves the wrong amount of money. See `docs/SECURITY.md`.
+- Staleness outranks the advisory `oraclePaused()` flag, because Robinhood
+  documents that flag as not enforced on-chain.
+- No custody, no upgradeability, no admin function that can move a token. The
+  worst case for an integrator is a wrong answer, never a stolen balance.
+
+### `ExactTransfer.sol`
+
+Moves an exact number of **shares** rather than an exact number of raw units.
+The multiplier is read inside the transaction, so a quote built minutes ago in a
+browser cannot settle against a ratio that has since changed. Rounding is floor
+and the caller states the shortfall it accepts, so truncation cannot pass
+unnoticed.
+
+One deliberate asymmetry, and it is the detail worth arguing about in a review:
+**a transfer does not need a fresh price, only an intact multiplier.** So a
+weekend (`STALE`) transfer is allowed, and a transfer quoted seconds before a
+split (`CORP_ACTION`) is not.
+
+---
+
+## Run it
+
+Node 22.12 or newer is required: the unit tests execute TypeScript directly
+through `--experimental-strip-types`. `npm test` checks this first and says so
+rather than failing with a syntax error.
+
+```bash
+npm install
+npm run dev                 # desk on :8080
+npm test                    # TypeScript unit tests + Solidity tests
+npm run typecheck
+```
+
+Contracts on their own:
+
+```bash
+cd contracts
+forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts   # first time only
+forge test -vv
+```
+
+### Prices
+
+Out of the box no Chainlink feed is registered, so every asset reports
+`NO_FEED`, the desk labels its marks as indicative, and the risk screens say so
+in a banner. That is intentional. To switch prices to the oracle:
+
+```bash
+FEED_DIRECTORY_URL=<chainlink feed directory for chain 4663> npm run feeds:sync
+# or
+export ROBINHOOD_FEEDS='{"NVDA":{"feed":"0x…","maxStaleness":93600,"decimals":8}}'
+```
+
+Feed addresses are never hardcoded in source. Robinhood's docs point at
+Chainlink's published list as the source of truth, and a pinned address is
+indistinguishable from a dead market the first time a feed is migrated.
+
+### Environment
+
+| Variable | Purpose |
+| --- | --- |
+| `ROBINHOOD_RPC_URL` | Dedicated RPC. Falls back to the public endpoint, which is a demo path only |
+| `ROBINHOOD_FEEDS` | JSON feed map, highest priority |
+| `ROBINHOOD_SEQUENCER_FEED` | Chainlink L2 uptime feed. Empty disables the check |
+| `ROBINHOOD_SEQUENCER_GRACE` | Seconds after the sequencer recovers before data is trusted. Default 1800 |
+| `ROBINHOOD_CORP_ACTION_WINDOW` | Seconds before a multiplier change to warn. Default 7200 |
+| `VITE_EXACT_TRANSFER` | Deployed ExactTransfer address. Unset uses the direct-transfer route |
+
+---
+
+## What is real and what is not
+
+Being precise about this is the whole point of the project, so it applies to the
+project's own claims too.
+
+**Real, reading live from chain 4663:**
+token registry from Robinhood's `/rhj/assets`, balances via batched `balanceOf`,
+`uiMultiplier()` / `newUIMultiplier()` / `effectiveAt()` / `oraclePaused()` read
+from each token, Chainlink `latestRoundData()` when a feed is configured,
+sequencer uptime, and signed ERC-20 transfers computed from the live multiplier.
+
+Live exact send (direct route, 14 Sep 2026), NVDA 0.0003 UI shares →
+`0.000299767632372506` raw at multiplier `1.000775159164630595`:
+[0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555).
+Blockscout reports the raw ERC-20 amount because explorers do not read
+`uiMultiplier`. That disagreement is the product.
+
+**Real but unpriced until you configure feeds:** every mark in the desk falls
+back to an indicative demo number, and every surface says so.
+
+**Simulation, and labelled as such in the UI:** the stress scenarios, the
+volatility and LTV tables, and the hypothetical credit line in the risk view.
+These are demo heuristics for showing the shape of the problem. They are not
+credit parameters and nothing in this repo is a lending market.
+
+Stock Tokens are Regulation S instruments issued by Robinhood Assets (Jersey)
+Limited and are not offered to US persons. This project is unaffiliated with
+Robinhood.
+
+The trust model, the failure policy and an answer to every finding from an
+external security review are in `docs/SECURITY.md`. Read it before integrating.
