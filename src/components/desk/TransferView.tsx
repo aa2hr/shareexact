@@ -180,7 +180,12 @@ export function TransferView({ provider, address }: Props) {
         uiShares: formatFixedToDecimalString(pre.delivered),
         raw: formatFixedToDecimalString(result.raw),
         multiplier: formatMultiplierDisplay(pre.multiplier),
-        note: `${result.route} · to ${shortAddr(recipient)} · ${result.hash.slice(0, 10)}`,
+        note: `to ${shortAddr(recipient)}`,
+        // Hash and route travel as their own fields so the activity row can
+        // render a real explorer link. A hash printed as plain text is the one
+        // number in this product a reviewer cannot check.
+        hash: result.hash,
+        route: result.route,
       });
       void runPreflight();
     } catch (err) {

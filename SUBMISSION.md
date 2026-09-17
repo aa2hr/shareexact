@@ -3,11 +3,16 @@
 **Track:** Robinhood Chain (Ethereum ecosystem) · Colosseum Crypto World's Fair
 **Team:** two people
 **Live:** the desk, reading chain 4663 and signing transfers today
-**Contracts:** written, tested (61 Foundry tests), Slither-clean. Addresses in
-`deployments/chain-4663.json`, written by `npm run deploy:record` and checked
-against the live chain by `npm run deploy:verify`. Runbook: `docs/DEPLOY.md`
-**Proof:** share-denominated transfer executed on mainnet —
-[`0xf8da86e2…d649555`](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555)
+**Contracts (chain 4663, deployed and Sourcify-verified):**
+- ShareExactGuard `0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`
+- ExactTransfer `0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`
+- 8 Chainlink feeds registered; `npm run feeds:parity` checks each one's
+  `description()` against the token it prices
+**Proof:** exact-share settlement through the guarded route —
+[`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29)
+0.002 shares requested · 0.001998450882483378 raw moved · multiplier
+1.000775159164630595 · 1 wei shortfall, consented to on-chain
+**Verify it yourself:** `npm run deploy:verify` — 16/16 against live chain state
 
 ---
 

@@ -55,6 +55,16 @@ export interface ActivityItem {
   raw: string;
   multiplier: string;
   note: string;
+  /**
+   * Transaction hash, when the row came from a signed send.
+   *
+   * Kept as its own field rather than embedded in `note` so the row can render
+   * a real link. A hash printed as plain text is the one thing in this product
+   * a reviewer cannot check, which defeats the point of showing it at all.
+   */
+  hash?: string;
+  /** How it settled. Absent for rows that predate the distinction. */
+  route?: "guarded" | "preflight";
 }
 
 interface DeskState {

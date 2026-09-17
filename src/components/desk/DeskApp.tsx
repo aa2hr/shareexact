@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { COPY, LANGS, detectLang, type Lang } from "@/lib/copy";
 import { getMarketSession } from "@/lib/session";
 import { scanWalletBook, fetchRegistry } from "@/lib/scan";
+import { explorerTxUrl } from "@/lib/exact-transfer";
 import { fetchOracleState } from "@/lib/oracle";
 import { getStock, mergeLiveAssets, mergeOracleMarks, STOCKS, isDustBook } from "@/lib/stocks";
 import { buildRiskSnapshot } from "@/lib/risk";
@@ -376,7 +377,23 @@ export function DeskApp() {
               <ul className="space-y-2 text-sm">
                 {activity.map((a) => (
                   <li key={a.id} className="rounded-xl bg-card px-4 py-3 font-mono text-xs">
-                    {a.symbol} · {a.uiShares} sh → raw {a.raw} · {a.multiplier} · {a.note}
+                    <span>
+                      {a.symbol} · {a.uiShares} sh → raw {a.raw} · {a.multiplier}
+                      {a.route ? ` · ${a.route}` : ""} · {a.note}
+                    </span>
+                    {a.hash && (
+                      <>
+                        {" · "}
+                        <a
+                          href={explorerTxUrl(a.hash)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline underline-offset-2"
+                        >
+                          {a.hash.slice(0, 10)}… ↗
+                        </a>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
