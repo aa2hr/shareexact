@@ -37,38 +37,86 @@ function arg(flag) {
   return i > -1 ? process.argv[i + 1] : undefined;
 }
 
-function symbolFromPair(entry) {
-  const raw =
-    entry.pair?.[0] ??
-    entry.name ??
-    entry.assetName ??
-    entry.docs?.baseAsset ??
-    entry.path ??
-    "";
-  const text = Array.isArray(raw) ? raw[0] : String(raw);
-  const base = text.split("/")[0].trim().toUpperCase();
-  // "NVDA", "NVDA STOCK TOKEN", "TOKENIZED NVDA" all collapse to a ticker.
-  const match = base.match(/[A-Z]{1,6}/g);
-  return match ? match[match.length === 1 ? 0 : 0] : "";
+/**
+ * Extract the ticker a feed prices.
+ *
+ * The first version read `entry.pair[0]` and fell back with `??`. On the
+ * Robinhood directory `pair` is `["", ""]` — present, and empty. `??` only
+ * catches null and undefined, so every row produced an empty ticker and the
+ * whole sync reported zero usable feeds while the file was perfectly fine.
+ *
+ * The fix is not a longer fallback chain but a change of source. Robinhood's
+ * rows carry the ticker in three places that are actually populated:
+ *
+ *   docs.baseAssetEntityId  "crypto-RHSGOV"          <- most structured
+ *   name                    "Robinhood SGOV-USD"
+ *   path                    "rhsgov-usd-shared-svr"
+ *
+ * Each is read in that order, the "RH" issuer prefix is stripped, and a row
+ * that yields nothing is skipped loudly rather than silently. Guessing a
+ * ticker wrong would bind a token to another asset's price, which is the worst
+ * failure this repository exists to prevent — so the caller is told to verify
+ * each address against `description()` on-chain before registering it.
+ */
+function symbolFromEntry(entry) {
+  const candidates = [
+    entry?.docs?.baseAssetEntityId, // "crypto-RHSGOV"
+    entry?.name, // "Robinhood SGOV-USD"
+    entry?.path, // "rhsgov-usd-shared-svr"
+    Array.isArray(entry?.pair) ? entry.pair[0] : entry?.pair,
+    entry?.assetName,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string" || candidate.trim() === "") continue;
+    let text = candidate.trim().toUpperCase();
+
+    text = text.replace(/^(CRYPTO|FOREX|EQUITY)-/, ""); // entity-id prefix
+    text = text.replace(/^ROBINHOOD\s+/, ""); // "Robinhood SGOV-USD"
+    text = text.split(/[/\-_\s]/)[0]; // take the base leg
+    text = text.replace(/^RH/, ""); // issuer prefix: RHSGOV -> SGOV
+
+    if (/^[A-Z]{1,6}$/.test(text)) return text;
+  }
+  return "";
 }
 
 function fromDirectory(list) {
   const feeds = {};
+  let skipped = 0;
+
   for (const entry of list) {
-    const address = entry.proxyAddress ?? entry.contractAddress ?? entry.address;
-    if (!address || !ADDRESS.test(address)) continue;
-    const symbol = symbolFromPair(entry);
-    if (!symbol) continue;
-    const heartbeat = Number(entry.heartbeat ?? entry.threshold ?? 0);
+    // `proxyAddress` is the stable address integrators call; `contractAddress`
+    // is the underlying aggregator and can be replaced without notice.
+    // `secondaryProxyAddress` is the SVR variant and is deliberately ignored.
+    const address = entry?.proxyAddress ?? entry?.contractAddress ?? entry?.address;
+    if (!address || !ADDRESS.test(address)) {
+      skipped += 1;
+      continue;
+    }
+    const symbol = symbolFromEntry(entry);
+    if (!symbol) {
+      skipped += 1;
+      continue;
+    }
+
+    const heartbeat = Number(entry?.heartbeat ?? 0);
     feeds[symbol] = {
       feed: address,
-      // Give the published heartbeat real headroom: a feed that is a few
-      // minutes late is not a dead feed, and flapping into STALE every evening
-      // would train users to ignore the warning that matters.
-      maxStaleness: heartbeat > 0 ? Math.max(heartbeat * 2, 3600) : DEFAULT_STALENESS,
-      decimals: Number.isInteger(entry.decimals) ? entry.decimals : DEFAULT_DECIMALS,
+      // The heartbeat is recorded but does not set the bound. Robinhood equity
+      // feeds publish 24/5 with an 86,400s heartbeat, so trusting it directly
+      // would give a 48h window and let a genuinely dead feed pass for two
+      // days. 26h is tight enough to catch that and loose enough to survive a
+      // normal overnight gap; the weekend is meant to read STALE.
+      maxStaleness: DEFAULT_STALENESS,
+      decimals: Number.isInteger(entry?.decimals) ? entry.decimals : DEFAULT_DECIMALS,
+      heartbeat: heartbeat > 0 ? heartbeat : null,
+      marketHours: entry?.docs?.marketHours ?? null,
+      sourceName: entry?.name ?? null,
     };
   }
+
+  if (skipped > 0) console.log(`  skipped ${skipped} rows with no usable address or ticker`);
   return feeds;
 }
 
@@ -128,9 +176,15 @@ async function main() {
   await writeFile(OUTPUT, `${JSON.stringify(output, null, 2)}\n`, "utf8");
   console.log(`wrote ${count} feeds to ${OUTPUT}`);
   for (const [symbol, cfg] of Object.entries(feeds).slice(0, 10)) {
-    console.log(`  ${symbol.padEnd(6)} ${cfg.feed}  staleness ${cfg.maxStaleness}s`);
+    console.log(`  ${symbol.padEnd(6)} ${cfg.feed}  staleness ${cfg.maxStaleness}s  (${cfg.sourceName ?? "?"})`);
   }
   if (count > 10) console.log(`  … and ${count - 10} more`);
+  console.log(
+    "\n  Tickers are derived from the directory's own fields, not guessed from prose,\n" +
+      "  but VERIFY before registering: cast call <feed> \"description()(string)\"\n" +
+      "  must name the asset you are about to bind. A wrong feed prices a token\n" +
+      "  against another company's stock.",
+  );
 }
 
 main().catch((err) => {
