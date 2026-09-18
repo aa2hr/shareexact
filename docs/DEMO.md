@@ -14,14 +14,15 @@ header (ACTIVE Stock Tokens on chain 4663) and a live multiplier that is not 1.0
 > succeeds, with no revert and no warning."
 
 **0:25 — provenance.**
-Point at the price banner. Either it says Chainlink with an age, or it says
-indicative marks with no feed configured. Say out loud that the app refuses to
-show a mark it cannot source.
+Point at the price banner. On NVDA/AAPL/MSFT/GOOGL/TSLA/SPY/SLV/INTC it should
+say Chainlink with an age. Other names still say indicative / `NO_FEED`. Say out
+loud that the app refuses to show a mark it cannot source.
 
 **0:50 — the exact transfer. This is the moment.**
 Transfer view, pick the highest-multiplier asset, type a share amount. Show the
 two columns: what a naive integration would move versus what actually moves.
-Sign it. Open the Blockscout link.
+Sign it. Open the Blockscout link. The recorded proof is the guarded route:
+[0x7a6daf6d…1ada29](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29).
 
 > "The multiplier was read from the token two seconds before signing, not from
 > the registry cache, and not from what the screen was showing."
@@ -82,10 +83,14 @@ costs nothing and hiding it risks the entry.
 
 ## Checklist
 
-- [ ] Guard and ExactTransfer deployed and verified on 4663; addresses in README
-- [ ] `ROBINHOOD_FEEDS` populated so the banner reads Chainlink, not indicative
-- [x] At least one exact transfer executed on mainnet, tx hash in the README
-      ([0xf8da86e2…](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555))
+- [x] Guard and ExactTransfer deployed and verified on 4663; addresses in README
+      and `deployments/chain-4663.json`. `npm run deploy:verify` is 16/16.
+- [x] Eight feeds on the Guard (AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA). Other
+      names still report `NO_FEED` / indicative — that is the remaining gap, not
+      a missing deploy.
+- [x] At least one exact transfer executed on mainnet through ExactTransfer,
+      tx hash in the README
+      ([0x7a6daf6d…1ada29](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29))
 - [ ] `npm test` green in CI, visible in the repo
 - [ ] `@shareexact/sdk` published, or at minimum installable from the repo
 - [ ] Pitch video and technical demo video recorded separately
