@@ -57,6 +57,7 @@ export function DeskBar({
   return (
     <div className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-2.5 md:px-6">
+        <img src="/logo.svg" alt="ShareExact" width={32} height={32} className="size-8 shrink-0" />
         <button
           type="button"
           onClick={() => {
@@ -65,7 +66,7 @@ export function DeskBar({
           }}
           className="flex min-w-0 items-center gap-2 text-start"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+          <span className="grid size-7 shrink-0 place-items-center rounded-md border border-border bg-card text-[10px] font-semibold text-muted-foreground">
             {profileInitial(profile)}
           </span>
           <div className="min-w-0">
