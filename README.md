@@ -1,6 +1,6 @@
 # ShareExact
 
-[![CI](https://github.com/shareexact/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/shareexact/shareexact/actions/workflows/ci.yml)
+[![CI](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml)
 
 **The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
 
@@ -37,8 +37,9 @@ and a desk that refuses to show a number it cannot source.
 | ShareExactGuard | [`0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`](https://robinhoodchain.blockscout.com/address/0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8) |
 | ExactTransfer | [`0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`](https://robinhoodchain.blockscout.com/address/0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2) |
 | Proof transaction | [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29) |
+| Record | [`deployments/chain-4663.json`](deployments/chain-4663.json) |
 | Chain | Robinhood Chain mainnet, 4663 |
-| Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()` |
+| Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()`: AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA |
 
 Both contracts are verified on Sourcify. The proof transaction moved 0.002
 shares through the guarded route: 0.001998450882483378 raw units at a multiplier
@@ -57,7 +58,7 @@ npm run feeds:parity     # does the desk agree with the guard about every feed
 ```
 contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 61 tests
 sdk/           @shareexact/sdk — zero-dependency reader for other protocols
-deployments/   Contract addresses. Empty until something is actually deployed
+deployments/   Live 4663 record: Guard, ExactTransfer, 8 feeds, proof tx. See deployments/README.md
 src/lib/       Oracle reads, ABI codec, data-state classifier, money path
 src/components/desk/   The desk UI
 docs/          Architecture, deploy runbook, domain setup, security, demo script
@@ -128,9 +129,15 @@ forge test -vv
 
 ### Prices
 
-Out of the box no Chainlink feed is registered, so every asset reports
-`NO_FEED`, the desk labels its marks as indicative, and the risk screens say so
-in a banner. That is intentional. To switch prices to the oracle:
+The live Guard on 4663 has eight Chainlink feeds registered (AAPL, GOOGL, INTC,
+MSFT, NVDA, SLV, SPY, TSLA). `npm run deploy:verify` and `npm run feeds:parity`
+check that the desk and the guard agree about those eight.
+
+A fresh local clone without `ROBINHOOD_FEEDS` still labels unknown names as
+indicative / `NO_FEED`. That is intentional: the remaining symbols in
+`src/lib/feeds.generated.json` are shown by the desk and are not registered on
+the guard. Registering one is a single transaction. To point a local desk at a
+feed map:
 
 ```bash
 FEED_DIRECTORY_URL=<chainlink feed directory for chain 4663> npm run feeds:sync
@@ -151,7 +158,7 @@ indistinguishable from a dead market the first time a feed is migrated.
 | `ROBINHOOD_SEQUENCER_FEED` | Chainlink L2 uptime feed. Empty disables the check |
 | `ROBINHOOD_SEQUENCER_GRACE` | Seconds after the sequencer recovers before data is trusted. Default 1800 |
 | `ROBINHOOD_CORP_ACTION_WINDOW` | Seconds before a multiplier change to warn. Default 7200 |
-| `VITE_EXACT_TRANSFER` | Deployed ExactTransfer address. Unset uses the direct-transfer route |
+| `VITE_EXACT_TRANSFER` | Deployed ExactTransfer address from `deployments/chain-4663.json`. Unset uses the direct-transfer route |
 
 ---
 
@@ -163,17 +170,22 @@ project's own claims too.
 **Real, reading live from chain 4663:**
 token registry from Robinhood's `/rhj/assets`, balances via batched `balanceOf`,
 `uiMultiplier()` / `newUIMultiplier()` / `effectiveAt()` / `oraclePaused()` read
-from each token, Chainlink `latestRoundData()` when a feed is configured,
+from each token, Chainlink `latestRoundData()` for the eight registered feeds,
 sequencer uptime, and signed ERC-20 transfers computed from the live multiplier.
 
-Live exact send (direct route, 14 Sep 2026), NVDA 0.0003 UI shares →
-`0.000299767632372506` raw at multiplier `1.000775159164630595`:
+Live exact send through ExactTransfer (17 Sep 2026), 0.002 UI shares →
+0.001998450882483378 raw at multiplier `1.000775159164630595`:
+[0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29).
+
+Earlier direct-route send (14 Sep 2026), NVDA 0.0003 UI shares →
+`0.000299767632372506` raw:
 [0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555).
 Blockscout reports the raw ERC-20 amount because explorers do not read
 `uiMultiplier`. That disagreement is the product.
 
-**Real but unpriced until you configure feeds:** every mark in the desk falls
-back to an indicative demo number, and every surface says so.
+**Real on the eight registered names; indicative on the rest:** a name the Guard
+does not have a feed for reports `NO_FEED` and the desk labels the mark as
+indicative. It does not present a demo number as a live one.
 
 **Simulation, and labelled as such in the UI:** the stress scenarios, the
 volatility and LTV tables, and the hypothetical credit line in the risk view.
