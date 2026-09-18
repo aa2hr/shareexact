@@ -8,13 +8,13 @@
                       "ShareExactGuard":  {
                                               "address":  "0x2dd1d4c1556d86c0dc98b6b5ef12b450c8d4c9d8",
                                               "explorer":  "https://robinhoodchain.blockscout.com/address/0x2dd1d4c1556d86c0dc98b6b5ef12b450c8d4c9d8",
-                                              "verified":  false
+                                              "verified":  true
                                           },
                       "ExactTransfer":  {
                                             "address":  "0x8c726dc9d27902515f70596b7f07610f1bf4ecd2",
                                             "guard":  "0x2dd1d4c1556d86c0dc98b6b5ef12b450c8d4c9d8",
                                             "explorer":  "https://robinhoodchain.blockscout.com/address/0x8c726dc9d27902515f70596b7f07610f1bf4ecd2",
-                                            "verified":  false
+                                            "verified":  true
                                         }
                   },
     "feeds":  {
