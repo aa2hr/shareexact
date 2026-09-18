@@ -1,6 +1,6 @@
 # ShareExact
 
-[![CI](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml)
+[![CI](https://github.com/shareexact/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/shareexact/shareexact/actions/workflows/ci.yml)
 
 **The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
 
@@ -28,6 +28,29 @@ ShareExact is the layer that makes both of those explicit: a contract, an SDK,
 and a desk that refuses to show a number it cannot source.
 
 ---
+
+## Live
+
+| | |
+| --- | --- |
+| Desk | **[shareexact.com](https://shareexact.com)** |
+| ShareExactGuard | [`0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`](https://robinhoodchain.blockscout.com/address/0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8) |
+| ExactTransfer | [`0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`](https://robinhoodchain.blockscout.com/address/0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2) |
+| Proof transaction | [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29) |
+| Chain | Robinhood Chain mainnet, 4663 |
+| Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()` |
+
+Both contracts are verified on Sourcify. The proof transaction moved 0.002
+shares through the guarded route: 0.001998450882483378 raw units at a multiplier
+of 1.000775159164630595, with a 1 wei rounding shortfall consented to on-chain
+and recorded in the `ExactShareTransfer` event.
+
+None of that has to be taken on trust:
+
+```bash
+npm run deploy:verify    # 16 checks against live chain state
+npm run feeds:parity     # does the desk agree with the guard about every feed
+```
 
 ## What is in here
 
