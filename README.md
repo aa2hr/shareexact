@@ -1,6 +1,6 @@
 # ShareExact
 
-[![CI](https://github.com/shareexact/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/shareexact/shareexact/actions/workflows/ci.yml)
+[![CI](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml)
 
 **The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
 
