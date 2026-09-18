@@ -328,12 +328,23 @@ export function DeskApp() {
             <Button variant="ghost" className="w-full justify-start" onClick={() => setHelp(true)}>
               {t.how}
             </Button>
+            {/*
+              The source-download button pointed at /ShareExact-source.zip, a
+              file that was never in public/. A dead link on a live site is
+              worse than no link, so it is gone rather than repaired: the code
+              belongs in a repository, not a zip served from the app.
+            */}
             <a
-              href="/ShareExact-source.zip"
-              download="ShareExact-source.zip"
-              className="inline-flex h-11 w-full items-center justify-start rounded-md px-4 text-sm font-medium text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+              href="https://x.com/ShareExact"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="ShareExact on X"
+              title="ShareExact on X"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground"
             >
-              {t.downloadSource}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </a>
           </div>
         </aside>
