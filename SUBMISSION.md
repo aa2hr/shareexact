@@ -5,8 +5,12 @@
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
 **Contracts:** written, tested (61 Foundry tests), Slither-clean. Addresses in
 `deployments/chain-4663.json`, written by `npm run deploy:record` and checked
-against the live chain by `npm run deploy:verify`. Runbook: `docs/DEPLOY.md`
-**Proof:** share-denominated transfer executed on mainnet —
+against the live chain by `npm run deploy:verify` (16/16). Eight Chainlink feeds
+registered on the guard. Runbook: `docs/DEPLOY.md`
+**Proof:** share-denominated transfer executed on mainnet through ExactTransfer —
+[`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29)
+
+Earlier direct-route send (before the guard was live):
 [`0xf8da86e2…d649555`](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555)
 
 ---
@@ -70,8 +74,8 @@ Follow `docs/DEMO.md` exactly. The desk opens on Transfer by design.
 
 ## What is real and what is not
 
-Real: the registry, balances, multipliers, Chainlink reads, sequencer status,
-the contracts, and the signed transfer.
+Real: the registry, balances, multipliers, eight Chainlink feeds on the guard,
+sequencer status, the contracts, and the signed transfer through ExactTransfer.
 
 Simulation, and labelled in the UI: the stress scenarios and the volatility and
 LTV tables in the risk view. These are demo heuristics. This is not a lending
@@ -95,7 +99,9 @@ node --version    # 22.12 or newer
 npm install
 npm run dev
 npm test          # 54 TypeScript tests + 61 Solidity tests
+npm run deploy:verify
 ```
 
-Prices show as indicative until a Chainlink feed is configured, and the desk
-says so in a banner rather than presenting a demo number as a live one.
+The eight registered names are priced from the Guard. Other names report
+`NO_FEED` and the desk labels them indicative rather than presenting a demo
+number as a live one.
