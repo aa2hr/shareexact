@@ -5,20 +5,41 @@
 **Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
 **Technical demo:** [https://youtu.be/TwiEW0ngcT0](https://youtu.be/TwiEW0ngcT0) (2:50)
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
-**Contracts:** written, tested (65 Foundry tests), Slither-clean. Addresses in
-`deployments/chain-4663.json`, written by `npm run deploy:record` and checked
-against the live chain by `npm run deploy:verify` (16/16). Eight Chainlink feeds
-registered on the guard. Runbook: `docs/DEPLOY.md`
-**Proof:** share-denominated transfer executed on mainnet through ExactTransfer —
-[`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29)
+**Contracts:** written, tested (65 Foundry tests, including the 4
+`CorpActionCoverage` regression tests added 20 Sep), Slither-clean. Redeployed
+20 Sep 2026 after an external review found the guard could settle a transfer
+across a pending corporate action on any token without a registered price feed
+— see "Corporate-action fix" below. Addresses in `deployments/chain-4663.json`,
+written by `npm run deploy:record` and checked against the live chain by
+`npm run deploy:verify` (16/16). Eight Chainlink feeds re-registered on the new
+guard. Blockscout source verification is pending — the verifier API is
+returning a Cloudflare challenge to the CLI; will complete it through the
+explorer's own UI. Runbook: `docs/DEPLOY.md`
+**Proof:** share-denominated transfer executed on the redeployed ExactTransfer —
+[`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03)
 
-Video demo tx (0.01 NVDA → `0.009992254412416894` raw), shown in the technical demo:
-[`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3)
+Prior deployment's proof transactions (retired guard `0x2dd1d4c1…`, replaced 20 Sep 2026 for the fix below):
+[`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29),
+video demo tx [`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3)
 
-Earlier direct-route send (before the guard was live):
+Earlier direct-route send (before any guard was live):
 [`0xf8da86e2…d649555`](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555)
 
 ---
+
+## Corporate-action fix (20 Sep 2026)
+
+An external review found `ShareExactGuard._evaluate()` returned `NO_FEED` and
+stopped before ever checking for a pending corporate action, so
+`ExactTransfer` — which blocks only on `CORP_ACTION` and `SEQUENCER_DOWN` —
+settled straight across a pending split or dividend on any of the 186 Stock
+Tokens with no registered price feed. Fixed in commit `4123646` (contract) and
+`bad3bae` (SDK/app classifier parity), covered by four new regression tests in
+`contracts/test/CorpActionCoverage.t.sol`. Because `ExactTransfer.guard` is
+immutable, shipping this required a full redeploy: new `ShareExactGuard` at
+`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`, new `ExactTransfer` at
+`0x507b0d8e8558e899af3b511b083f73dfe17168ab`, all eight feeds re-registered,
+proof transaction above.
 
 ## The problem, with a number
 
