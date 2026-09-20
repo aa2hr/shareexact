@@ -33,7 +33,7 @@ function classify(overrides: Partial<Parameters<typeof classifyDataState>[0]> = 
   });
 }
 
-test("SDK classifier matches the eleven contract cases", () => {
+test("SDK classifier matches the contract cases", () => {
   assert.equal(classify(), "FRESH");
   assert.equal(classify({ hasFeed: false }), "NO_FEED");
   assert.equal(classify({ updatedAt: NOW - 50 * 3600 }), "STALE");
@@ -45,6 +45,10 @@ test("SDK classifier matches the eleven contract cases", () => {
   assert.equal(classify({ effectiveAt: NOW + 5 * 86_400, pendingMultiplier: 4n * WAD }), "FRESH");
   assert.equal(classify({ effectiveAt: NOW + 600, pendingMultiplier: WAD }), "FRESH");
   assert.equal(classify({ effectiveAt: NOW - 600, pendingMultiplier: 4n * WAD }), "FRESH");
+  assert.equal(
+    classify({ hasFeed: false, effectiveAt: NOW + 1800, pendingMultiplier: 4n * WAD }),
+    "CORP_ACTION",
+  );
 });
 
 test("a feed timestamp in the future is stale, not maximally fresh", () => {

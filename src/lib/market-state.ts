@@ -56,8 +56,13 @@ export function classifyDataState(input: ClassifyInput): DataState {
   // 1. Chain liveness. Nothing else is meaningful while the sequencer is down.
   if (!input.sequencerOk) return "SEQUENCER_DOWN";
 
-  // 2. Is there anything to read at all.
-  if (!input.hasFeed) return "NO_FEED";
+  // 2. A missing price feed does not make the unit safe. Transfers read the
+  //    multiplier, not the price, so a pending split is CORP_ACTION even when
+  //    no aggregator is registered.
+  if (!input.hasFeed) {
+    if (corpActionImminent(input)) return "CORP_ACTION";
+    return "NO_FEED";
+  }
 
   // 3. A missing or non-positive answer is indistinguishable from a dead feed.
   if (input.price === null || input.price <= 0 || !input.updatedAt) return "STALE";
@@ -73,17 +78,19 @@ export function classifyDataState(input: ClassifyInput): DataState {
   if (input.oraclePaused) return "ORACLE_PAUSED";
 
   // 6. Imminent corporate action. A scheduled no-op does not count.
-  if (
-    input.effectiveAt &&
-    input.effectiveAt > input.now &&
-    input.pendingMultiplier !== null &&
-    input.pendingMultiplier !== input.multiplier &&
-    input.effectiveAt - input.now <= input.corpActionWindow
-  ) {
-    return "CORP_ACTION";
-  }
+  if (corpActionImminent(input)) return "CORP_ACTION";
 
   return "FRESH";
+}
+
+function corpActionImminent(input: ClassifyInput): boolean {
+  return Boolean(
+    input.effectiveAt &&
+      input.effectiveAt > input.now &&
+      input.pendingMultiplier !== null &&
+      input.pendingMultiplier !== input.multiplier &&
+      input.effectiveAt - input.now <= input.corpActionWindow,
+  );
 }
 
 /** True when a price may be shown as a live mark rather than a historical one. */

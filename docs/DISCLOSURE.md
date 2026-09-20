@@ -34,7 +34,7 @@ written below.
   presented without distinction from a live one.
 - `@shareexact/sdk`.
 - `scripts/fetch-feeds.mjs`.
-- 54 TypeScript unit tests and 65 Solidity tests covering conversion,
+- 55 TypeScript unit tests and 65 Solidity tests covering conversion,
   classification, the ABI codec, the transfer routes, rate limiting, and
   adversarial token and feed behaviour.
 - Documentation: README, architecture, security policy and threat model, demo

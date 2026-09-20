@@ -103,7 +103,7 @@ Copy that file into the submission form verbatim.
 node --version    # 22.12 or newer
 npm install
 npm run dev
-npm test          # 54 TypeScript tests + 65 Solidity tests
+npm test          # 55 TypeScript tests + 65 Solidity tests
 npm run deploy:verify
 ```
 

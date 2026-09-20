@@ -35,6 +35,15 @@ test("unregistered feed classifies as NO_FEED", () => {
   assert.equal(classifyDataState(input({ hasFeed: false })), "NO_FEED");
 });
 
+test("unregistered token with a pending split is CORP_ACTION", () => {
+  assert.equal(
+    classifyDataState(
+      input({ hasFeed: false, effectiveAt: NOW + 1800, pendingMultiplier: 4n * WAD }),
+    ),
+    "CORP_ACTION",
+  );
+});
+
 test("weekend hold classifies as STALE", () => {
   // Friday close, read on Sunday: the feed answers, it just stopped moving.
   assert.equal(classifyDataState(input({ updatedAt: NOW - 50 * 3600 })), "STALE");

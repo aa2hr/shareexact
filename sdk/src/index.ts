@@ -148,23 +148,28 @@ export function classifyDataState(input: {
   corpActionWindow: number;
 }): DataState {
   if (!input.sequencerOk) return "SEQUENCER_DOWN";
-  if (!input.hasFeed) return "NO_FEED";
+  if (!input.hasFeed) {
+    if (corpActionImminent(input)) return "CORP_ACTION";
+    return "NO_FEED";
+  }
   if (input.price === null || input.price <= 0 || !input.updatedAt) return "STALE";
   // A timestamp in the future is a broken or hostile feed, not a fresher one.
   // Identical to ShareExactGuard._evaluate and src/lib/market-state.ts.
   if (input.updatedAt > input.now) return "STALE";
   if (input.now > input.updatedAt && input.now - input.updatedAt > input.maxStaleness) return "STALE";
   if (input.oraclePaused) return "ORACLE_PAUSED";
-  if (
-    input.effectiveAt &&
-    input.effectiveAt > input.now &&
-    input.pendingMultiplier !== null &&
-    input.pendingMultiplier !== input.multiplier &&
-    input.effectiveAt - input.now <= input.corpActionWindow
-  ) {
-    return "CORP_ACTION";
-  }
+  if (corpActionImminent(input)) return "CORP_ACTION";
   return "FRESH";
+}
+
+function corpActionImminent(input: Parameters<typeof classifyDataState>[0]): boolean {
+  return Boolean(
+    input.effectiveAt &&
+      input.effectiveAt > input.now &&
+      input.pendingMultiplier !== null &&
+      input.pendingMultiplier !== input.multiplier &&
+      input.effectiveAt - input.now <= input.corpActionWindow,
+  );
 }
 
 /**
