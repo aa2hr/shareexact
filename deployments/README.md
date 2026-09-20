@@ -6,10 +6,10 @@ This directory is the single place addresses live. It is not empty.
 | --- | --- |
 | Network | Robinhood Chain mainnet, 4663 |
 | Record | [`chain-4663.json`](./chain-4663.json) |
-| ShareExactGuard | [`0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`](https://robinhoodchain.blockscout.com/address/0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8) |
-| ExactTransfer | [`0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`](https://robinhoodchain.blockscout.com/address/0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2) |
+| ShareExactGuard | [`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`](https://robinhoodchain.blockscout.com/address/0x290558b05dec593af7b2ef6dbc26b9ffc38adb37) |
+| ExactTransfer | [`0x507b0d8e8558e899af3b511b083f73dfe17168ab`](https://robinhoodchain.blockscout.com/address/0x507b0d8e8558e899af3b511b083f73dfe17168ab) |
 | Feeds on the guard | 8, verified against `description()`: AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA |
-| Proof | [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29) — 0.002 shares through ExactTransfer |
+| Proof | [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03) — guarded send on the 20 Sep 2026 deployment |
 | Rehearsal | [`chain-46630.json`](./chain-46630.json) on testnet |
 
 `npm run deploy:verify` runs 16 checks against live chain state. That is the
