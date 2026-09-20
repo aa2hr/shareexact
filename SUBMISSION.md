@@ -2,6 +2,8 @@
 
 **Track:** Robinhood Chain (Ethereum ecosystem) · Colosseum Crypto World's Fair
 **Team:** two people
+**Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
+**Technical demo:** [https://youtu.be/TwiEW0ngcT0](https://youtu.be/TwiEW0ngcT0) (2:50)
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
 **Contracts:** written, tested (61 Foundry tests), Slither-clean. Addresses in
 `deployments/chain-4663.json`, written by `npm run deploy:record` and checked
@@ -9,6 +11,9 @@ against the live chain by `npm run deploy:verify` (16/16). Eight Chainlink feeds
 registered on the guard. Runbook: `docs/DEPLOY.md`
 **Proof:** share-denominated transfer executed on mainnet through ExactTransfer —
 [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29)
+
+Video demo tx (0.01 NVDA → `0.009992254412416894` raw), shown in the technical demo:
+[`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fd2ee44bb28583a4372fd00eb23c499569f3)
 
 Earlier direct-route send (before the guard was live):
 [`0xf8da86e2…d649555`](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555)
