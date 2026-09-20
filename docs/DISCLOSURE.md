@@ -48,7 +48,7 @@ written below.
   consent in the UI; auth, per-caller quota and bounded inputs on the AI
   endpoints; adversarial test suite.
 
-**Team:** two people. No outside funding raised.
+**Team:** solo. No outside funding raised.
 
 ---
 

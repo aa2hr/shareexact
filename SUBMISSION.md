@@ -1,7 +1,7 @@
 # ShareExact — submission
 
 **Track:** Robinhood Chain (Ethereum ecosystem) · Colosseum Crypto World's Fair
-**Team:** two people
+**Team:** solo — Ali
 **Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
 **Technical demo:** [https://youtu.be/TwiEW0ngcT0](https://youtu.be/TwiEW0ngcT0) (2:50)
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
