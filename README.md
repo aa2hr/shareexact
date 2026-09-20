@@ -43,7 +43,7 @@ and a desk that refuses to show a number it cannot source.
 | ShareExactGuard | [`0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`](https://robinhoodchain.blockscout.com/address/0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8) |
 | ExactTransfer | [`0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`](https://robinhoodchain.blockscout.com/address/0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2) |
 | Proof transaction | [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29) |
-| Video demo tx | [`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fd2ee44bb28583a4372fd00eb23c499569f3) |
+| Video demo tx | [`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3) |
 | Record | [`deployments/chain-4663.json`](deployments/chain-4663.json) |
 | Chain | Robinhood Chain mainnet, 4663 |
 | Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()`: AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA |
@@ -189,7 +189,7 @@ Earlier direct-route send (14 Sep 2026), NVDA 0.0003 UI shares →
 [0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555).
 
 Video demo tx (19 Sep 2026), 0.01 NVDA → `0.009992254412416894` raw:
-[0x1e8e80f32b847899f02d2c1ac4fd2ee44bb28583a4372fd00eb23c499569f3](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fd2ee44bb28583a4372fd00eb23c499569f3).
+[0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3).
 This is the transaction shown in the technical demo.
 
 Blockscout reports the raw ERC-20 amount because explorers do not read

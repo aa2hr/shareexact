@@ -13,7 +13,7 @@ registered on the guard. Runbook: `docs/DEPLOY.md`
 [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29)
 
 Video demo tx (0.01 NVDA → `0.009992254412416894` raw), shown in the technical demo:
-[`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fd2ee44bb28583a4372fd00eb23c499569f3)
+[`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3)
 
 Earlier direct-route send (before the guard was live):
 [`0xf8da86e2…d649555`](https://robinhoodchain.blockscout.com/tx/0xf8da86e2e507b7adfcaacf85e97377956445c40f2b3b063b7e10fc0c3d649555)
