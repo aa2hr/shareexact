@@ -36,7 +36,7 @@ stops moving, and `latestRoundData()` keeps answering a Friday price.
 > marking positions against a closed market and does not know it."
 
 **2:10 — the contract.**
-`forge test`. 61 tests. Call out three specifically:
+`forge test`. 65 tests. Call out three specifically:
 `test_stalenessOutranksPause` (the issuer's pause flag is advisory, so it is
 checked after staleness, not instead of it),
 `test_weekendStalePriceStillAllowsTransfer` (a transfer needs the multiplier,

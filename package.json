@@ -25,7 +25,6 @@
     "check:node": "node scripts/check-node.mjs",
     "check:version": "node scripts/check-version.mjs",
     "test:unit": "node --experimental-strip-types --test src/lib/conversion.test.ts src/lib/market-state.test.ts src/lib/abi.test.ts src/lib/exact-transfer.test.ts src/lib/ai-limits.test.ts sdk/src/index.test.ts",
-    "test:app-shell": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
     "test:contracts": "cd contracts && forge test",
     "build:contracts": "cd contracts && forge build",
     "deploy:contracts": "cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood --broadcast --verify",

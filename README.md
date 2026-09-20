@@ -63,7 +63,7 @@ npm run feeds:parity     # does the desk agree with the guard about every feed
 ## What is in here
 
 ```
-contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 61 tests
+contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 65 tests
 sdk/           @shareexact/sdk — zero-dependency reader for other protocols
 deployments/   Live 4663 record: Guard, ExactTransfer, 8 feeds, proof tx. See deployments/README.md
 src/lib/       Oracle reads, ABI codec, data-state classifier, money path

@@ -5,7 +5,7 @@
 **Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
 **Technical demo:** [https://youtu.be/TwiEW0ngcT0](https://youtu.be/TwiEW0ngcT0) (2:50)
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
-**Contracts:** written, tested (61 Foundry tests), Slither-clean. Addresses in
+**Contracts:** written, tested (65 Foundry tests), Slither-clean. Addresses in
 `deployments/chain-4663.json`, written by `npm run deploy:record` and checked
 against the live chain by `npm run deploy:verify` (16/16). Eight Chainlink feeds
 registered on the guard. Runbook: `docs/DEPLOY.md`
@@ -73,7 +73,7 @@ Follow `docs/DEMO.md` exactly. The desk opens on Transfer by design.
 3. Sign. Open the Blockscout link.
 4. Show staleness: either the live banner on a weekend, or
    `test_staleAfterWeekend`.
-5. `forge test` — 61 tests, including `ExampleCollateralPool`: a third-party
+5. `forge test` — 65 tests, including `ExampleCollateralPool`: a third-party
    lending pool that refuses to liquidate on a weekend mark.
 6. Only then, the risk view, labelled as simulation.
 
@@ -103,7 +103,7 @@ Copy that file into the submission form verbatim.
 node --version    # 22.12 or newer
 npm install
 npm run dev
-npm test          # 54 TypeScript tests + 61 Solidity tests
+npm test          # 54 TypeScript tests + 65 Solidity tests
 npm run deploy:verify
 ```
 

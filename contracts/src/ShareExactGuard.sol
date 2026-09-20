@@ -238,7 +238,12 @@ contract ShareExactGuard is IShareExactGuard {
         if (!_sequencerOk()) return (DataState.SEQUENCER_DOWN, 0, 0, 0);
 
         FeedConfig memory cfg = _feeds[token];
-        if (cfg.feed == address(0)) return (DataState.NO_FEED, 0, 0, 0);
+        if (cfg.feed == address(0)) {
+            // A transfer needs the unit, not the price. Do not hide a pending
+            // multiplier change behind NO_FEED.
+            if (_corpActionImminent(token)) return (DataState.CORP_ACTION, 0, 0, 0);
+            return (DataState.NO_FEED, 0, 0, 0);
+        }
         decimals_ = cfg.decimals;
 
         // 2. Price read. A reverting or malformed feed is treated as STALE

@@ -18,7 +18,7 @@
                                         }
                   },
     "feeds":  {
-                  "note":  "8 symbols registered on the guard (AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA), covering the sample desk. The remaining 27 in feeds.generated.json are shown by the desk but report NO_FEED on-chain. Run npm run feeds:parity to see the gap; registering them is one transaction each and blocked by nothing but gas.",
+                  "note":  "8 symbols registered on the guard (AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA), covering the sample desk. The remaining 43 in feeds.generated.json are shown by the desk but report NO_FEED on-chain. Run npm run feeds:parity to see the gap; registering them is one transaction each and blocked by nothing but gas.",
                   "registered":  {
                                      "GOOGL":  {
                                                    "feed":  "0xF6f373a037c30F0e5010d854385cA89185AE638b",

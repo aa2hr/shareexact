@@ -156,8 +156,8 @@ export const STOCKS: Stock[] = [
     price: 412.8,
     change1d: -0.62,
     afterHours: -0.14,
-    about: "Live ×4 UI multiplier. The exact-transfer trap: sending “1” as raw moves 4 shares.",
-    aboutFa: "ضریب نمایشی زنده ۴×. تله انتقال دقیق: ارسال «۱» به‌صورت raw یعنی ۴ سهم.",
+    about: "4× UI multiplier. Sending a displayed “1” as raw units moves 4 shares.",
+    aboutFa: "ضریب نمایشی ۴×. ارسال «۱» به‌صورت raw یعنی ۴ سهم.",
     color: "#e01e24",
   },
   {

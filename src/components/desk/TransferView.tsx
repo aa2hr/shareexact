@@ -75,6 +75,7 @@ export function TransferView({ provider, address }: Props) {
   const runPreflight = useCallback(async () => {
     if (!provider || !address) {
       setPre(null);
+      setPreError(null);
       return;
     }
     try {

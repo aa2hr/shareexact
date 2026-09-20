@@ -22,7 +22,7 @@ written below.
 **Built inside the hackathon window:**
 
 - `contracts/` in full: `ShareExactGuard.sol`, `ExactTransfer.sol`, the ERC-8056
-  and Chainlink interfaces, mocks, 52 Foundry tests, deployment script.
+  and Chainlink interfaces, mocks, 65 Foundry tests, deployment script.
 - `src/lib/oracle.ts`, `rpc.ts`, `abi.ts`, `feeds.ts`, `market-state.ts`: live
   Chainlink and ERC-8056 reads from chain 4663, the data-state classifier, and
   the feed-configuration layer.
@@ -34,7 +34,7 @@ written below.
   presented without distinction from a live one.
 - `@shareexact/sdk`.
 - `scripts/fetch-feeds.mjs`.
-- 54 TypeScript unit tests and 61 Solidity tests covering conversion,
+- 54 TypeScript unit tests and 65 Solidity tests covering conversion,
   classification, the ABI codec, the transfer routes, rate limiting, and
   adversarial token and feed behaviour.
 - Documentation: README, architecture, security policy and threat model, demo
