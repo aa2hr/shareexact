@@ -40,18 +40,22 @@ and a desk that refuses to show a number it cannot source.
 | | |
 | --- | --- |
 | Desk | **[shareexact.com](https://shareexact.com)** |
-| ShareExactGuard | [`0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8`](https://robinhoodchain.blockscout.com/address/0x2dd1d4C1556D86C0dc98B6b5ef12b450C8D4C9D8) |
-| ExactTransfer | [`0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2`](https://robinhoodchain.blockscout.com/address/0x8C726dC9d27902515F70596b7f07610f1Bf4ecd2) |
-| Proof transaction | [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29) |
+| ShareExactGuard | [`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`](https://robinhoodchain.blockscout.com/address/0x290558b05dec593af7b2ef6dbc26b9ffc38adb37) |
+| ExactTransfer | [`0x507b0d8e8558e899af3b511b083f73dfe17168ab`](https://robinhoodchain.blockscout.com/address/0x507b0d8e8558e899af3b511b083f73dfe17168ab) |
+| Proof transaction | [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03) |
 | Video demo tx | [`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3) |
 | Record | [`deployments/chain-4663.json`](deployments/chain-4663.json) |
 | Chain | Robinhood Chain mainnet, 4663 |
 | Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()`: AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA |
 
-Both contracts are verified on Sourcify. The proof transaction moved 0.002
-shares through the guarded route: 0.001998450882483378 raw units at a multiplier
-of 1.000775159164630595, with a 1 wei rounding shortfall consented to on-chain
-and recorded in the `ExactShareTransfer` event.
+Both contracts are on Robinhood Chain mainnet, 4663, redeployed 20 Sep 2026
+so the corporate-action check runs even on tokens without a price feed. The
+eight Chainlink feeds were re-registered on the new guard: AAPL GOOGL INTC
+MSFT NVDA SLV SPY TSLA. Record: [`deployments/chain-4663.json`](deployments/chain-4663.json).
+
+The proof transaction moved shares through the new ExactTransfer. Blockscout
+source verification is pending (the CLI hits a Cloudflare challenge); the
+bytecode and the eight feeds are what `npm run deploy:verify` checks.
 
 None of that has to be taken on trust:
 
@@ -180,7 +184,10 @@ token registry from Robinhood's `/rhj/assets`, balances via batched `balanceOf`,
 from each token, Chainlink `latestRoundData()` for the eight registered feeds,
 sequencer uptime, and signed ERC-20 transfers computed from the live multiplier.
 
-Live exact send through ExactTransfer (17 Sep 2026), 0.002 UI shares →
+Live exact send through ExactTransfer (20 Sep 2026, current deployment):
+[0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03).
+
+Prior deployment (17 Sep 2026, retired), 0.002 UI shares →
 0.001998450882483378 raw at multiplier `1.000775159164630595`:
 [0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29).
 
