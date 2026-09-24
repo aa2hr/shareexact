@@ -68,6 +68,7 @@ contract ShareExactGuard is IShareExactGuard {
     ///      from being waved through.
     uint64 public constant MIN_STALENESS = 60;
     uint64 public constant MAX_STALENESS = 7 days;
+    uint64 public constant MIN_CORP_ACTION_WINDOW = 10 minutes;
     uint64 public constant MAX_CORP_ACTION_WINDOW = 7 days;
     uint64 public constant MAX_SEQUENCER_GRACE = 1 days;
 
@@ -105,7 +106,9 @@ contract ShareExactGuard is IShareExactGuard {
 
     constructor(address owner_, uint64 corpActionWindow_) {
         if (owner_ == address(0)) revert ZeroAddress();
-        if (corpActionWindow_ > MAX_CORP_ACTION_WINDOW) revert WindowOutOfRange(corpActionWindow_);
+        if (corpActionWindow_ < MIN_CORP_ACTION_WINDOW || corpActionWindow_ > MAX_CORP_ACTION_WINDOW) {
+            revert WindowOutOfRange(corpActionWindow_);
+        }
         owner = owner_;
         _corpActionWindow = corpActionWindow_;
         emit OwnershipTransferred(address(0), owner_);
@@ -172,8 +175,17 @@ contract ShareExactGuard is IShareExactGuard {
         emit SequencerFeedSet(feed, gracePeriod);
     }
 
+    /// @dev A floor, for the same reason `MIN_STALENESS` exists. The previous
+    ///      version accepted zero, and zero does not merely narrow the warning —
+    ///      it switches the check off, because `effectiveAt - block.timestamp
+    ///      <= 0` is false for every genuinely future activation. An integrator
+    ///      gating on `CORP_ACTION` would have gone quiet with no event that
+    ///      says "protection disabled". Widening had a ceiling; narrowing had
+    ///      nothing.
     function setCorpActionWindow(uint64 window) external onlyOwner {
-        if (window > MAX_CORP_ACTION_WINDOW) revert WindowOutOfRange(window);
+        if (window < MIN_CORP_ACTION_WINDOW || window > MAX_CORP_ACTION_WINDOW) {
+            revert WindowOutOfRange(window);
+        }
         _corpActionWindow = window;
         emit CorpActionWindowSet(window);
     }
@@ -194,6 +206,33 @@ contract ShareExactGuard is IShareExactGuard {
     /// @inheritdoc IShareExactGuard
     function corpActionWindow() public view returns (uint64) {
         return _corpActionWindow;
+    }
+
+    /// @inheritdoc IShareExactGuard
+    /// @dev The unit question, answered on its own.
+    ///
+    ///      `state()` returns a single value, and price states outrank the unit
+    ///      state inside it: a `STALE` or `ORACLE_PAUSED` feed is reported
+    ///      instead of a pending multiplier change that is also true at that
+    ///      moment. A consumer that branches on `CORP_ACTION` therefore went
+    ///      quiet exactly when the price was also unhealthy — and `ExactTransfer`
+    ///      settled across the activation.
+    ///
+    ///      Registering a price feed made a token *less* protected than leaving
+    ///      it unregistered, which is the opposite of what registration should
+    ///      do. That is the same defect as the NO_FEED short-circuit fixed on
+    ///      20 Sep, one branch further in: the unit fact was still gated behind
+    ///      the price.
+    ///
+    ///      This does not read the feed registry, the staleness bound, or the
+    ///      sequencer feed, and it does not revert. It does use
+    ///      `corpActionWindow()`, which the owner can move between 10 minutes
+    ///      and 7 days. When `newUIMultiplier()` cannot be read, that window is
+    ///      ignored and any future `effectiveAt` is imminent.
+    function unitChangeImminent(address token) public view returns (bool imminent, uint256 effectiveAt) {
+        imminent = _corpActionImminent(token);
+        (, uint256 e) = _tryUint(token, SEL_EFFECTIVE_AT);
+        effectiveAt = e;
     }
 
     function feedOf(address token) external view returns (address feed, uint64 maxStaleness, uint8 decimals_) {
@@ -399,14 +438,32 @@ contract ShareExactGuard is IShareExactGuard {
         return (true, word == 1);
     }
 
+    /// @dev Words are loaded directly instead of `abi.decode`d.
+    ///
+    ///      `latestRoundData()` returns `(uint80 roundId, int256 answer,
+    ///      uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)`.
+    ///      `abi.decode` range-checks the two `uint80` fields and reverts when a
+    ///      word does not fit — exactly the trap `_tryBool` already avoids for a
+    ///      dirty boolean, and which was left standing here. A feed returning a
+    ///      full 160-byte payload with a dirty `roundId` or `answeredInRound`
+    ///      therefore reverted `state()`, `priceOf()` and `usdValue()`, all
+    ///      three documented never to.
+    ///
+    ///      This contract never uses `roundId` or `answeredInRound`. The fix is
+    ///      to stop reading them at all, so a dirty value in a field we ignore
+    ///      cannot take down an observation function.
     function _tryLatestRoundData(address feed) internal view returns (bool ok, int256 answer, uint256 updatedAt) {
         (bool success, bytes memory data) =
             feed.staticcall(abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector));
         if (!success || data.length < 160) return (false, 0, 0);
-        (, answer,, updatedAt,) = abi.decode(data, (uint80, int256, uint256, uint256, uint80));
+        assembly {
+            answer := mload(add(data, 64)) // word 1: answer
+            updatedAt := mload(add(data, 128)) // word 3: updatedAt
+        }
         ok = true;
     }
 
+    /// @dev Same reasoning as `_tryLatestRoundData`, for the sequencer read.
     function _tryLatestRoundDataStarted(address feed)
         internal
         view
@@ -415,7 +472,10 @@ contract ShareExactGuard is IShareExactGuard {
         (bool success, bytes memory data) =
             feed.staticcall(abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector));
         if (!success || data.length < 160) return (false, 0, 0);
-        (, answer, startedAt,,) = abi.decode(data, (uint80, int256, uint256, uint256, uint80));
+        assembly {
+            answer := mload(add(data, 64)) // word 1: answer
+            startedAt := mload(add(data, 96)) // word 2: startedAt
+        }
         ok = true;
     }
 }

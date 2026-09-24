@@ -122,9 +122,27 @@ contract ExactTransfer {
         // problem: nothing can be quoted at all, so the quote reports
         // not-executable instead of inventing a 1:1 ratio.
         if (multiplier == 0) return (0, 0, 0, dataState, false);
+
+        // `Math.mulDiv` reverts on overflow and this function is documented
+        // never to. The product can only overflow when the multiplier is below
+        // 1.0, and the bound itself is always representable.
+        if (multiplier < WAD && uiShares > Math.mulDiv(type(uint256).max, multiplier, WAD)) {
+            return (0, 0, multiplier, dataState, false);
+        }
+
         raw = Math.mulDiv(uiShares, WAD, multiplier);
         deliveredShares = Math.mulDiv(raw, multiplier, WAD);
-        executable = dataState != DataState.CORP_ACTION && dataState != DataState.SEQUENCER_DOWN;
+
+        // The unit question is put to the token, not inferred from the enum.
+        // `STALE` and `ORACLE_PAUSED` outrank `CORP_ACTION` inside `state()`, so
+        // reading executability off the enum advertised a pending split as
+        // executable whenever the feed also happened to be stale or paused.
+        (bool unitMoving,) = guard.unitChangeImminent(token);
+
+        // A zero request is not executable: `transferShares` reverts
+        // `ZeroAmount`. Nor is one that floors away to nothing.
+        executable =
+            uiShares != 0 && raw != 0 && !unitMoving && dataState != DataState.SEQUENCER_DOWN;
     }
 
     /// @notice Largest whole share amount `holder` can send without a shortfall.
@@ -168,12 +186,18 @@ contract ExactTransfer {
         if (token == address(0) || to == address(0)) revert ZeroAddress();
         if (uiShares == 0) revert ZeroAmount();
 
-        DataState s = guard.state(token);
-        if (s == DataState.SEQUENCER_DOWN) revert SequencerDown();
-        if (s == DataState.CORP_ACTION) {
-            (,, uint256 effectiveAt) = guard.multiplierOf(token);
-            revert MultiplierChangePending(token, effectiveAt);
-        }
+        // Chain liveness still comes from the enum: that one genuinely is a
+        // property of the chain, not of the token.
+        if (guard.state(token) == DataState.SEQUENCER_DOWN) revert SequencerDown();
+
+        // The unit check is asked separately and on purpose. Reading it off
+        // `state()` meant a pending activation went unseen whenever the price
+        // feed was STALE or the issuer had raised ORACLE_PAUSED, because a
+        // single-valued enum has to pick one answer and price outranks unit
+        // inside it. This contract does not care about the price at all; it
+        // cares only how many raw units make a share, so it asks that directly.
+        (bool unitMoving, uint256 effectiveAt) = guard.unitChangeImminent(token);
+        if (unitMoving) revert MultiplierChangePending(token, effectiveAt);
 
         (uint256 multiplier,,) = guard.multiplierOf(token);
         // Fail closed. If the token will not tell us how many raw units make a

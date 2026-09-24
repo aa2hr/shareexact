@@ -60,4 +60,19 @@ interface IShareExactGuard {
 
     /// @notice Seconds before a scheduled multiplier change that the guard starts reporting CORP_ACTION.
     function corpActionWindow() external view returns (uint64);
+
+    /// @notice Is a multiplier change scheduled inside the window, independent of price state?
+    /// @dev `state()` is single-valued and `STALE` / `ORACLE_PAUSED` outrank
+    ///      `CORP_ACTION` inside it, so a consumer branching on the enum can
+    ///      miss a pending unit change precisely when the price is also
+    ///      unhealthy. This answers the unit question on its own. It does not
+    ///      read the feed registry, the staleness bound, or the sequencer feed,
+    ///      and it does not revert. It does use `corpActionWindow()`, which the
+    ///      owner can set between 10 minutes and 7 days. When `newUIMultiplier()`
+    ///      cannot be read, the window is ignored and any future `effectiveAt`
+    ///      is imminent. Anything that moves units rather than prices should use
+    ///      this instead of branching on `CORP_ACTION`.
+    /// @return imminent    True when a scheduled change should block a unit move.
+    /// @return effectiveAt The token's `effectiveAt`; 0 when unset or unreadable.
+    function unitChangeImminent(address token) external view returns (bool imminent, uint256 effectiveAt);
 }
