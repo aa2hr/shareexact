@@ -1,5 +1,5 @@
 import { COPY } from "@/lib/copy";
-import { getStock, holdingValue, portfolioTotals } from "@/lib/stocks";
+import { displayedShares, getStock, holdingValue, portfolioTotals } from "@/lib/stocks";
 import { useDesk } from "@/lib/store";
 import { formatPct, formatShares, formatUsd } from "@/lib/utils";
 import { Spark } from "./Spark";
@@ -50,7 +50,7 @@ export function HoldingsView() {
                       <span className="text-xs text-muted-foreground">{s.name}</span>
                     </button>
                   </td>
-                  <td className="tabular px-4 py-3">{formatShares(h.shares)}</td>
+                  <td className="tabular px-4 py-3">{formatShares(displayedShares(h))}</td>
                   <td className="tabular px-4 py-3 font-mono text-xs">{Number(s.multiplier).toFixed(4)}×</td>
                   <td className="px-4 py-3">
                     <span className="tabular block">{s.price > 0 ? formatUsd(hv.value) : t.unpriced}</span>

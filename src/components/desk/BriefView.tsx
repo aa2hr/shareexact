@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { COPY } from "@/lib/copy";
 import { fetchBrief } from "@/lib/ai-client";
-import { getStock, holdingValue, portfolioTotals } from "@/lib/stocks";
+import { displayedShares, getStock, holdingValue, portfolioTotals } from "@/lib/stocks";
 import { useDesk, type BriefResult, type Stance } from "@/lib/store";
 import { formatPct, formatUsd } from "@/lib/utils";
 
@@ -202,7 +202,7 @@ export function BriefView() {
                 >
                   <span>
                     <span className="font-mono text-sm font-medium">{h.symbol}</span>
-                    <span className="ms-2 text-xs text-muted-foreground">{formatSharesLine(h.shares)}</span>
+                    <span className="ms-2 text-xs text-muted-foreground">{formatSharesLine(displayedShares(h))}</span>
                   </span>
                   <span className="text-end">
                     <span className="tabular block text-sm">{formatUsd(hv.value)}</span>

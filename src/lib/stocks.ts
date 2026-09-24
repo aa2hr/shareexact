@@ -1,4 +1,5 @@
 import type { DataState } from "./market-state";
+import { fallbackRawToUi, formatFixedToDecimalString, parseMultiplier } from "./conversion.ts";
 
 export type SessionKind = "open" | "pre" | "after" | "weekend";
 
@@ -21,7 +22,14 @@ export interface Stock {
   sector: string;
   contract: string;
   multiplier: string;
+  /**
+   * Cash mark per share. An oracle reading is the price of one raw token, so
+   * `mergeOracleMarks` divides it by `uiMultiplier` before storing it here.
+   * Dollars are `raw × rawTokenPrice`, which equals `shares × price`.
+   */
   price: number;
+  /** Chainlink price of one raw token, before the share conversion. */
+  rawTokenPrice?: number | null;
   change1d: number;
   afterHours: number;
   about: string;
@@ -289,17 +297,23 @@ export function mergeOracleMarks(
     const prev = live.get(r.symbol) ?? STOCK_BY_SYMBOL[r.symbol];
     if (!prev) continue;
     const hasOraclePrice = typeof r.price === "number" && r.price > 0;
+    const multiplier = r.multiplier ?? prev.multiplier;
+    const rawTokenPrice = hasOraclePrice ? (r.price as number) : (prev.rawTokenPrice ?? null);
+    // The feed prices one raw token. The desk's cash mark is the share price.
+    const sharePrice =
+      hasOraclePrice && r.unitAvailable
+        ? sharePriceFromRawToken(r.price as number, multiplier)
+        : null;
     live.set(r.symbol, {
       ...prev,
       contract: r.contract || prev.contract,
-      // Keep the registry multiplier visible for reference, but never present a
-      // fallback as a live reading: `unitAvailable` is what callers must check.
-      multiplier: r.multiplier ?? prev.multiplier,
+      multiplier,
       unitAvailable: r.unitAvailable,
       pendingMultiplier: r.pendingMultiplier,
       effectiveAt: r.effectiveAt,
-      price: hasOraclePrice ? (r.price as number) : prev.price,
-      priceSource: hasOraclePrice ? "oracle" : prev.price > 0 ? "indicative" : "none",
+      rawTokenPrice,
+      price: sharePrice != null && sharePrice > 0 ? sharePrice : prev.price,
+      priceSource: hasOraclePrice && sharePrice != null && sharePrice > 0 ? "oracle" : prev.price > 0 ? prev.priceSource ?? "indicative" : "none",
       priceUpdatedAt: r.updatedAt,
       priceAgeSeconds: r.ageSeconds,
       dataState: r.dataState,
@@ -327,8 +341,11 @@ export function bookIsOracleBacked(holdings: { symbol: string }[]): boolean {
 
 export interface Holding {
   symbol: string;
+  /** Share equivalents. Scanned books also carry `raw`; screens should display `displayedShares`. */
   shares: number;
   cost: number;
+  /** Raw ERC-20 balance as an integer string. Set by the wallet scan. */
+  raw?: string;
 }
 
 export const DEMO_HOLDINGS: Holding[] = [
@@ -345,13 +362,53 @@ export function getStock(symbol: string) {
   return live.get(symbol) ?? STOCK_BY_SYMBOL[symbol];
 }
 
+/** Drop an oracle overlay so tests, and a failed refresh, fall back to the shipped mark. */
+export function clearOracleOverlay(symbol: string) {
+  live.delete(symbol);
+}
+
+/** Share price = raw-token price × 1e18 / uiMultiplier. Both prices are dollars. */
+export function sharePriceFromRawToken(rawTokenPrice: number, multiplier: string): number {
+  if (!Number.isFinite(rawTokenPrice) || rawTokenPrice <= 0) return 0;
+  const m = parseMultiplier(multiplier);
+  if (m <= 0n) return 0;
+  const scaled = BigInt(Math.round(rawTokenPrice * 1e9));
+  return Number((scaled * 10n ** 18n) / m) / 1e9;
+}
+
+/** Shares implied by the raw balance and the multiplier on screen right now. */
+export function displayedShares(h: Holding): number {
+  if (!h.raw) return h.shares;
+  const s = getStock(h.symbol);
+  if (!s || s.unitAvailable === false) return h.shares;
+  try {
+    const ui = fallbackRawToUi(BigInt(h.raw), parseMultiplier(s.multiplier));
+    const shares = Number(formatFixedToDecimalString(ui));
+    return Number.isFinite(shares) ? shares : h.shares;
+  } catch {
+    return h.shares;
+  }
+}
+
+/** Position value in dollars. Raw × token price when the scan recorded a balance. */
+export function positionDollars(h: Holding): number {
+  const s = getStock(h.symbol);
+  if (!s) return 0;
+  if (h.raw && s.rawTokenPrice != null && s.rawTokenPrice > 0) {
+    const scaled = BigInt(Math.round(s.rawTokenPrice * 1e9));
+    return Number((BigInt(h.raw) * scaled) / 10n ** 18n) / 1e9;
+  }
+  return displayedShares(h) * s.price;
+}
+
 export function holdingValue(h: Holding) {
   const s = getStock(h.symbol);
   if (!s) return { value: 0, pnl: 0, pnlPct: 0, ah: 0 };
-  const value = h.shares * s.price;
-  const pnl = h.cost > 0 ? h.shares * (s.price - h.cost) : 0;
+  const shares = displayedShares(h);
+  const value = positionDollars(h);
+  const pnl = h.cost > 0 ? shares * (s.price - h.cost) : 0;
   const pnlPct = h.cost > 0 ? ((s.price - h.cost) / h.cost) * 100 : 0;
-  const ah = h.shares * s.price * (s.afterHours / 100);
+  const ah = shares * s.price * (s.afterHours / 100);
   return { value, pnl, pnlPct, ah };
 }
 
@@ -362,15 +419,16 @@ export function portfolioTotals(holdings: Holding[]) {
   for (const h of holdings) {
     const s = getStock(h.symbol);
     if (!s) continue;
-    value += h.shares * s.price;
-    cost += h.shares * h.cost;
-    ah += h.shares * s.price * (s.afterHours / 100);
+    const shares = displayedShares(h);
+    value += positionDollars(h);
+    cost += shares * h.cost;
+    ah += shares * s.price * (s.afterHours / 100);
   }
   const pnl = value - cost;
   const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
   const day = holdings.reduce((acc, h) => {
     const s = getStock(h.symbol);
-    return acc + (s ? h.shares * s.price * (s.change1d / 100) : 0);
+    return acc + (s ? displayedShares(h) * s.price * (s.change1d / 100) : 0);
   }, 0);
   return { value, cost, pnl, pnlPct, ah, day };
 }

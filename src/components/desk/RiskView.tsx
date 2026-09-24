@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { COPY, isRtl } from "@/lib/copy";
 import { aaplSplitMarks, buildRiskSnapshot, SCENARIOS, stressRisk, type BookMarks } from "@/lib/risk";
-import { getStock, isDustBook } from "@/lib/stocks";
+import { displayedShares, getStock, isDustBook } from "@/lib/stocks";
 import { useDesk } from "@/lib/store";
 import { formatShares, formatUsd } from "@/lib/utils";
 
@@ -45,7 +45,7 @@ export function RiskView() {
   const crwdStock = getStock("CRWD");
   const aapl = holdings.find((h) => h.symbol === "AAPL");
   const aaplStock = getStock("AAPL");
-  const aaplUi = (aapl?.shares ?? 0) * (marks?.AAPL?.shareMul ?? 1);
+  const aaplUi = (aapl ? displayedShares(aapl) : 0) * (marks?.AAPL?.shareMul ?? 1);
   const aaplPx = marks?.AAPL?.price ?? aaplStock?.price ?? 0;
   const aaplMult = marks?.AAPL?.multiplier ?? Number(aaplStock?.multiplier ?? 1);
   const aaplValue = aaplUi * aaplPx;
@@ -74,7 +74,7 @@ export function RiskView() {
         <article className="rounded-xl border border-border bg-card p-5">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{t.exactness}</p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight">
-            CRWD {formatShares(crwd.shares)} {t.shares} · {Number(crwdStock.multiplier).toFixed(0)}×
+            CRWD {formatShares(displayedShares(crwd))} {t.shares} · {Number(crwdStock.multiplier).toFixed(0)}×
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{t.crwdTrap}</p>
           <Button className="mt-4" variant="secondary" onClick={() => setView("transfer")}>
@@ -229,7 +229,7 @@ export function RiskView() {
         </div>
         {aapl && aaplStock && (
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label={t.shares} value={`${formatShares(aapl.shares)} → ${formatShares(aaplUi)}`} />
+            <Metric label={t.shares} value={`${formatShares(displayedShares(aapl))} → ${formatShares(aaplUi)}`} />
             <Metric label={t.multiplier} value={`${Number(aaplStock.multiplier).toFixed(4)}× → ${aaplMult.toFixed(4)}×`} />
             <Metric label={t.value} value={formatUsd(aaplValue)} />
             <Metric label={t.borrow} value={formatUsd(borrow)} />

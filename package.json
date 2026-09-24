@@ -24,7 +24,7 @@
     "test": "npm run check:node && npm run check:version && npm run test:unit && npm run test:contracts",
     "check:node": "node scripts/check-node.mjs",
     "check:version": "node scripts/check-version.mjs",
-    "test:unit": "node --experimental-strip-types --test src/lib/conversion.test.ts src/lib/market-state.test.ts src/lib/abi.test.ts src/lib/exact-transfer.test.ts src/lib/ai-limits.test.ts sdk/src/index.test.ts",
+    "test:unit": "node --experimental-strip-types --test src/lib/conversion.test.ts src/lib/market-state.test.ts src/lib/abi.test.ts src/lib/exact-transfer.test.ts src/lib/ai-limits.test.ts src/lib/valuation.test.ts sdk/src/index.test.ts",
     "test:contracts": "cd contracts && forge test",
     "build:contracts": "cd contracts && forge build",
     "deploy:contracts": "cd contracts && forge script script/Deploy.s.sol --rpc-url robinhood --broadcast --verify",

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Spark } from "./Spark";
 import { COPY, isRtl } from "@/lib/copy";
 import { fetchAsset } from "@/lib/ai-client";
-import { getStock, holdingValue } from "@/lib/stocks";
+import { displayedShares, getStock, holdingValue } from "@/lib/stocks";
 import { useDesk, type Stance } from "@/lib/store";
 import { formatPct, formatShares, formatUsd, shortAddr } from "@/lib/utils";
 
@@ -80,7 +80,7 @@ export function AssetPanel() {
         <dl className="mb-5 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-card p-3">
             <dt className="text-xs text-muted-foreground">{t.shares}</dt>
-            <dd className="tabular font-medium">{holding ? formatShares(holding.shares) : "—"}</dd>
+            <dd className="tabular font-medium">{holding ? formatShares(displayedShares(holding)) : "—"}</dd>
           </div>
           <div className="rounded-xl bg-card p-3">
             <dt className="text-xs text-muted-foreground">{t.value}</dt>

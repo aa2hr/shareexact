@@ -1,4 +1,4 @@
-import { getStock, type Holding } from "./stocks";
+import { displayedShares, getStock, type Holding } from "./stocks";
 import type { AssetAnalysis, BriefResult, Stance, ThesisBasket } from "./store";
 import type { Lang } from "./copy";
 
@@ -15,7 +15,8 @@ function linesOf(holdings: Holding[]) {
     .map((h) => {
       const s = getStock(h.symbol);
       if (!s || s.price <= 0) return null;
-      const value = h.shares * s.price;
+      const shares = displayedShares(h);
+      const value = shares * s.price;
       const pnlPct = h.cost > 0 ? ((s.price - h.cost) / h.cost) * 100 : 0;
       return { h, s, value, pnlPct, ah: s.afterHours, w: 0 };
     })
@@ -143,7 +144,7 @@ export function buildLocalAsset(opts: {
       },
       {
         title: "Book weight",
-        body: h ? `${h.shares} UI shares — ${w.toFixed(1)}% of value.` : "Not currently in this book.",
+        body: h ? `${displayedShares(h)} UI shares — ${w.toFixed(1)}% of value.` : "Not currently in this book.",
       },
       {
         title: "ERC-8056 multiplier",

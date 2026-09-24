@@ -238,7 +238,7 @@ export function DeskApp() {
       if (result.assets?.length) mergeLiveAssets(result.assets);
       const book = result.holdings.map((h) => {
         const s = getStock(h.symbol);
-        return { symbol: h.symbol, shares: h.shares, cost: s?.price || 0 };
+        return { symbol: h.symbol, shares: h.shares, raw: h.raw, cost: s?.price || 0 };
       });
       setHoldings(book);
       setStatus(

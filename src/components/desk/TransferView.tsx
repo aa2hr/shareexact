@@ -18,7 +18,7 @@ import {
   sendExactTransfer,
   type Preflight,
 } from "@/lib/exact-transfer";
-import { STOCKS, getStock } from "@/lib/stocks";
+import { displayedShares, STOCKS, getStock } from "@/lib/stocks";
 import { useDesk } from "@/lib/store";
 import { shortAddr } from "@/lib/utils";
 import type { EthereumProvider } from "@/lib/wallet";
@@ -151,7 +151,7 @@ export function TransferView({ provider, address }: Props) {
       setAmount(maxUiFromRaw(pre.rawBalance, pre.multiplier));
       return;
     }
-    const shares = holdings.find((h) => h.symbol === symbol)?.shares ?? 1;
+    const shares = displayedShares(holdings.find((h) => h.symbol === symbol) ?? { symbol, shares: 1, cost: 0 });
     setAmount(String(shares));
   }
 

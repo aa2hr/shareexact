@@ -1,4 +1,4 @@
-import { getStock, type Holding } from "./stocks";
+import { displayedShares, getStock, type Holding } from "./stocks";
 
 export type RiskBand = "low" | "moderate" | "high" | "critical";
 export type RiskAction = "none" | "monitor" | "reduce" | "protect";
@@ -120,7 +120,7 @@ function positionValue(h: Holding, shocks: Record<string, number>, marks?: BookM
   const stock = getStock(h.symbol);
   if (!stock) return 0;
   const m = markFor(h.symbol, marks);
-  const shares = h.shares * (m?.shareMul ?? 1);
+  const shares = displayedShares(h) * (m?.shareMul ?? 1);
   const price = (m?.price ?? stock.price) * (1 + (shocks[h.symbol] ?? 0));
   return shares * price;
 }

@@ -2,7 +2,7 @@ import { runAssetAnalysis, runDeskBrief, runThesisBasket } from "./ai";
 import { isRtl, type Lang } from "./copy";
 import { buildLocalAsset, buildLocalBrief, buildLocalThesis } from "./desk-engine";
 import { getMarketSession } from "./session";
-import { getStock, portfolioTotals, type Holding } from "./stocks";
+import { displayedShares, getStock, portfolioTotals, positionDollars, type Holding } from "./stocks";
 import type { AssetAnalysis, BriefResult, Stance, ThesisBasket } from "./store";
 
 function stanceOf(v: unknown): Stance {
@@ -33,7 +33,7 @@ export function bookPayload(holdings: Holding[]) {
       if (!s) return null;
       return {
         symbol: h.symbol,
-        shares: h.shares,
+        shares: displayedShares(h),
         cost: h.cost,
         price: s.price,
         change1d: s.change1d,
@@ -130,7 +130,8 @@ export async function fetchAsset(opts: {
   const h = opts.holdings.find((x) => x.symbol === opts.symbol);
   if (!s) return { error: "Unknown symbol" };
   const totals = portfolioTotals(opts.holdings);
-  const value = (h?.shares ?? 0) * s.price;
+  const shares = h ? displayedShares(h) : 0;
+  const value = h ? positionDollars(h) : 0;
   try {
     const raw = await runAssetAnalysis({
       data: {
@@ -145,7 +146,7 @@ export async function fetchAsset(opts: {
         change1d: s.change1d,
         afterHours: s.afterHours,
         multiplier: s.multiplier,
-        shares: h?.shares ?? 0,
+        shares,
         cost: h?.cost ?? s.price,
         bookWeight: totals.value > 0 ? (value / totals.value) * 100 : 0,
       },

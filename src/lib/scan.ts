@@ -150,6 +150,7 @@ export const scanWalletBook = createServerFn({ method: "POST" })
       contract: string;
       multiplier: string;
       shares: number;
+      raw: string;
     }[] = [];
 
     const chunk = 40;
@@ -177,6 +178,7 @@ export const scanWalletBook = createServerFn({ method: "POST" })
           contract: a.contract,
           multiplier: a.multiplier,
           shares,
+          raw: raw.toString(),
         });
       }
     }
