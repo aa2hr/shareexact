@@ -163,13 +163,12 @@ export function classifyDataState(input: {
 }
 
 function corpActionImminent(input: Parameters<typeof classifyDataState>[0]): boolean {
-  return Boolean(
-    input.effectiveAt &&
-      input.effectiveAt > input.now &&
-      input.pendingMultiplier !== null &&
-      input.pendingMultiplier !== input.multiplier &&
-      input.effectiveAt - input.now <= input.corpActionWindow,
-  );
+  // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
+  // multiplier fails closed for any future effectiveAt, before the window.
+  if (input.effectiveAt == null || input.effectiveAt <= input.now) return false;
+  if (input.pendingMultiplier === null) return true;
+  if (input.multiplier === 0n || input.pendingMultiplier === input.multiplier) return false;
+  return input.effectiveAt - input.now <= input.corpActionWindow;
 }
 
 /**
@@ -198,12 +197,11 @@ export async function readStockToken(
   ]);
 
   // FAIL CLOSED: zero means "we could not read the ratio", never "assume 1:1".
-  // A token whose multiplier read fails is indistinguishable from a 1:1 token,
-  // and guessing wrong moves the wrong number of shares.
+  // Pending and effectiveAt are read independently. Dropping them when the
+  // current multiplier fails would hide a scheduled change the guard reports.
   const multiplier = toBigInt(multiplierHex) ?? 0n;
-  const unitAvailable = multiplier > 0n;
-  const pendingMultiplier = unitAvailable ? toBigInt(pendingHex) : null;
-  const effectiveRaw = unitAvailable ? toBigInt(effectiveHex) : null;
+  const pendingMultiplier = toBigInt(pendingHex);
+  const effectiveRaw = toBigInt(effectiveHex);
   const effectiveAt = effectiveRaw && effectiveRaw > 0n ? Number(effectiveRaw) : null;
   const pausedRaw = toBigInt(pausedHex);
   // Match ShareExactGuard._tryBool: only the word `1` is true. 0 is false,

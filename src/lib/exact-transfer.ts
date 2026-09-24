@@ -175,13 +175,14 @@ export async function preflightTransfer(
   const naiveShares = (naiveRaw * multiplier) / WAD;
 
   const now = Math.floor(Date.now() / 1000);
-  const corpActionImminent = Boolean(
-    effectiveAt &&
-      effectiveAt > now &&
-      pendingMultiplier !== null &&
-      pendingMultiplier !== multiplier &&
-      effectiveAt - now <= CORP_ACTION_WARNING_WINDOW,
-  );
+  // Match ShareExactGuard._corpActionImminent: an unreadable pending value with
+  // a future effectiveAt is a block, even outside the warning window. The
+  // window only applies once the two multipliers can be compared.
+  const corpActionImminent =
+    effectiveAt != null &&
+    effectiveAt > now &&
+    (pendingMultiplier === null ||
+      (pendingMultiplier !== multiplier && effectiveAt - now <= CORP_ACTION_WARNING_WINDOW));
 
   const blockers: string[] = [];
   const warnings: string[] = [];

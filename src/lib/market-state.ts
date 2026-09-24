@@ -84,13 +84,15 @@ export function classifyDataState(input: ClassifyInput): DataState {
 }
 
 function corpActionImminent(input: ClassifyInput): boolean {
-  return Boolean(
-    input.effectiveAt &&
-      input.effectiveAt > input.now &&
-      input.pendingMultiplier !== null &&
-      input.pendingMultiplier !== input.multiplier &&
-      input.effectiveAt - input.now <= input.corpActionWindow,
-  );
+  // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
+  // multiplier fails closed for any future effectiveAt, before the window.
+  // The window applies only once both multipliers can be compared.
+  if (input.effectiveAt == null || input.effectiveAt <= input.now) return false;
+  if (input.pendingMultiplier === null) return true;
+  // 0n is "current multiplier could not be read", which the contract treats as
+  // not imminent once the pending value itself was readable (`!okCur`).
+  if (input.multiplier === 0n || input.pendingMultiplier === input.multiplier) return false;
+  return input.effectiveAt - input.now <= input.corpActionWindow;
 }
 
 /** True when a price may be shown as a live mark rather than a historical one. */

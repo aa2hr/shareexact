@@ -49,6 +49,12 @@ test("SDK classifier matches the contract cases", () => {
     classify({ hasFeed: false, effectiveAt: NOW + 1800, pendingMultiplier: 4n * WAD }),
     "CORP_ACTION",
   );
+  assert.equal(classify({ effectiveAt: NOW + 1800, pendingMultiplier: null }), "CORP_ACTION");
+  assert.equal(classify({ effectiveAt: NOW + 5 * 86_400, pendingMultiplier: null }), "CORP_ACTION");
+  assert.equal(
+    classify({ multiplier: 0n, pendingMultiplier: 4n * WAD, effectiveAt: NOW + 1800 }),
+    "FRESH",
+  );
 });
 
 test("a feed timestamp in the future is stale, not maximally fresh", () => {
@@ -93,6 +99,25 @@ test("unread multiplier with a dangling pending is not CORP_ACTION", async () =>
   });
   assert.equal(state.multiplier, 0n);
   assert.equal(state.dataState, "FRESH");
+});
+
+test("unread pending multiplier with a future effectiveAt is CORP_ACTION", async () => {
+  const call = mockCall({
+    [SELECTORS.uiMultiplier]: `0x${word(WAD)}`,
+    [SELECTORS.newUIMultiplier]: null,
+    [SELECTORS.effectiveAt]: `0x${word(BigInt(NOW + 5 * 86_400))}`,
+    [SELECTORS.oraclePaused]: `0x${word(0n)}`,
+    [SELECTORS.latestRoundData]: roundBlob(178_40_000_000n, BigInt(NOW - 60)),
+  });
+  const state = await readStockToken(call, TOKEN, {
+    feed: FEED,
+    now: NOW,
+    maxStaleness: 26 * 3600,
+    corpActionWindow: 7200,
+  });
+  assert.equal(state.multiplier, WAD);
+  assert.equal(state.pendingMultiplier, null);
+  assert.equal(state.dataState, "CORP_ACTION");
 });
 
 test("a dirty paused word is unreadable, not paused", async () => {

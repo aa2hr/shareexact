@@ -118,12 +118,35 @@ test("age formatting is readable at every scale", () => {
 });
 
 test("an unreadable multiplier is a unit failure, not a corporate action", () => {
-  // The caller signals an unreadable ratio by passing a null pending value.
-  // The price state then reflects only the feed, and the unit failure travels
-  // separately, so nothing gets a CORP_ACTION badge that has no corporate
-  // action pending.
+  // No scheduled time: a null pending value is not, by itself, a corporate action.
   const state = classifyDataState(
     input({ multiplier: 0n, pendingMultiplier: null, effectiveAt: null }),
   );
   assert.equal(state, "FRESH");
+});
+
+test("an unreadable pending multiplier with a future effectiveAt fails closed", () => {
+  // ShareExactGuard._corpActionImminent returns true before the window check
+  // when newUIMultiplier() cannot be read and effectiveAt is still in the future.
+  assert.equal(
+    classifyDataState(input({ effectiveAt: NOW + 1800, pendingMultiplier: null })),
+    "CORP_ACTION",
+  );
+  assert.equal(
+    classifyDataState(input({ effectiveAt: NOW + 5 * 86_400, pendingMultiplier: null })),
+    "CORP_ACTION",
+  );
+  assert.equal(
+    classifyDataState(
+      input({ hasFeed: false, effectiveAt: NOW + 1800, pendingMultiplier: null }),
+    ),
+    "CORP_ACTION",
+  );
+  // A readable pending against an unreadable current is not imminent (`!okCur`).
+  assert.equal(
+    classifyDataState(
+      input({ multiplier: 0n, pendingMultiplier: 4n * WAD, effectiveAt: NOW + 1800 }),
+    ),
+    "FRESH",
+  );
 });

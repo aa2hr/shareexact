@@ -198,14 +198,13 @@ export async function readOracleState(symbols: string[]): Promise<OracleSnapshot
       now,
       maxStaleness: cfg?.maxStaleness ?? 0,
       oraclePaused: paused,
-      effectiveAt: unitAvailable ? effectiveAt : null,
+      // Pass both through even when the current multiplier could not be read.
+      // classifyDataState matches the guard: unreadable pending + future
+      // effectiveAt is CORP_ACTION; a readable pending against an unreadable
+      // current is not.
+      effectiveAt,
       multiplier,
-      // When the current multiplier is unreadable, a pending value cannot be
-      // compared against anything, so it must not be reported as a scheduled
-      // corporate action. That is a unit failure and it travels in
-      // `unitAvailable`, not in the price state. Conflating them would put a
-      // CORP_ACTION badge on an asset with no corporate action pending.
-      pendingMultiplier: unitAvailable ? pendingRaw : null,
+      pendingMultiplier: pendingRaw,
       corpActionWindow: CORP_ACTION_WINDOW,
     });
 
