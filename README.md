@@ -10,6 +10,8 @@
 
 **The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
 
+Integrators: [`docs/INTEGRATING.md`](docs/INTEGRATING.md).
+
 **Concretely:** on a token with a 4x multiplier, someone moving $10,000 of
 stock — 25 shares at $400 — computes 25 raw units the obvious way and sends
 100 shares, $40,000, a $30,000 overshoot. The ERC-20 transfer succeeds. No
@@ -53,9 +55,9 @@ so the corporate-action check runs even on tokens without a price feed. The
 eight Chainlink feeds were re-registered on the new guard: AAPL GOOGL INTC
 MSFT NVDA SLV SPY TSLA. Record: [`deployments/chain-4663.json`](deployments/chain-4663.json).
 
-The proof transaction moved shares through the new ExactTransfer. Blockscout
-source verification is pending (the CLI hits a Cloudflare challenge); the
-bytecode and the eight feeds are what `npm run deploy:verify` checks.
+The proof transaction moved shares through the new ExactTransfer. Both
+contracts are verified on Blockscout. The bytecode and the eight feeds are
+what `npm run deploy:verify` checks.
 
 None of that has to be taken on trust:
 

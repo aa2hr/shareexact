@@ -49,6 +49,39 @@ Keeping them apart matters because they fail independently. A feed can go stale
 at 11am on a Tuesday (that is a problem). A feed is stale at 11am on a Sunday
 (that is Sunday). Conflating them produces either false alarms or false comfort.
 
+## Unit correctness and oracle freshness are separate invariants
+
+This is the distinction the whole design turns on, and it is worth drawing,
+because most integrations only implement the right-hand branch:
+
+```
+                        ShareExact
+                             │
+          ┌──────────────────┴──────────────────┐
+          │                                     │
+   unit correctness                     oracle freshness
+          │                                     │
+   multiplierOf()                       feed state + updatedAt
+   reads the token only,                reads the registered feed
+   no registry, no owner state          and its configured bound
+          │                                     │
+   scheduled changes                    STALE / FRESH
+          │
+   CORP_ACTION · ORACLE_PAUSED
+```
+
+A `latestRoundData()` round can be perfectly fresh and still price the wrong
+share/unit regime, because the freeze/flip/unpause sequence that keeps the token
+price continuous through a corporate action is operational, not enforced
+on-chain. A staleness check covers the right branch and sees nothing on the
+left.
+
+The two branches are also two ways to integrate. `state()` collapses both into
+one value and is the easy path. `multiplierOf()` gives a consumer the left
+branch alone, with its own window and no dependency on this contract's owner —
+which is the cleaner separation when a protocol wants its risk policy to stay
+its own. `docs/INTEGRATING.md` covers both.
+
 ## Precedence order
 
 Identical in the contract, the app, and the SDK, and pinned by tests in all
@@ -56,7 +89,12 @@ three (`ShareExactGuard.t.sol`, `market-state.test.ts`, `sdk/src/index.test.ts`)
 
 1. `SEQUENCER_DOWN` — on an L2 nothing else is meaningful, because feeds cannot
    be updated while the sequencer is down.
-2. `NO_FEED` — nothing registered, so there is nothing to evaluate.
+2. **No feed registered** — the evaluation branches here rather than stopping.
+   A missing *price* feed does not make the *unit* safe, so a pending multiplier
+   change is still reported: `CORP_ACTION` when one is imminent, `NO_FEED`
+   otherwise. The earlier flat `NO_FEED` return is what let a transfer settle
+   across a pending split on any unregistered token; see the 20 Sep fix in
+   `SUBMISSION.md` and `contracts/test/CorpActionCoverage.t.sol`.
 3. `STALE` — no answer, a non-positive answer, or an answer older than the
    configured bound.
 4. `ORACLE_PAUSED` — the issuer's advisory flag, checked *after* staleness
@@ -64,6 +102,13 @@ three (`ShareExactGuard.t.sol`, `market-state.test.ts`, `sdk/src/index.test.ts`)
 5. `CORP_ACTION` — a pending multiplier that differs from the current one and
    activates inside the warning window. A scheduled no-op does not count.
 6. `FRESH`.
+
+One consequence of 2 and 3 together, worth stating rather than discovering: for
+a token that *does* have a feed registered, `STALE` outranks `CORP_ACTION`, so a
+stale feed masks a pending change — while an unregistered token reports
+`CORP_ACTION` directly. `state()` is single-valued, so something has to lose.
+Consumers that care about the unit specifically should read `multiplierOf()`,
+which is described above and depends on no registry state at all.
 
 If those three implementations ever drift, a user reading the UI and a contract
 reading the chain would disagree about whether a price can be trusted, which is

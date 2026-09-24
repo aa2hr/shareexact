@@ -1,5 +1,7 @@
 # ShareExact — submission
 
+**In one sentence:** ShareExact turns the share count you typed into the raw amount the chain will move, and reports a scheduled unit change that a fresh Chainlink round cannot see. It is not general corporate-action protection: a dividend with no future `effectiveAt` is not caught in advance.
+
 **Track:** Robinhood Chain (Ethereum ecosystem) · Colosseum Crypto World's Fair
 **Team:** solo — Ali
 **Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
@@ -12,9 +14,7 @@ across a pending corporate action on any token without a registered price feed
 — see "Corporate-action fix" below. Addresses in `deployments/chain-4663.json`,
 written by `npm run deploy:record` and checked against the live chain by
 `npm run deploy:verify` (16/16). Eight Chainlink feeds re-registered on the new
-guard. Blockscout source verification is pending — the verifier API is
-returning a Cloudflare challenge to the CLI; will complete it through the
-explorer's own UI. Runbook: `docs/DEPLOY.md`
+guard. Both contracts are verified on Blockscout. Runbook: `docs/DEPLOY.md`
 **Proof:** share-denominated transfer executed on the redeployed ExactTransfer —
 [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03)
 
