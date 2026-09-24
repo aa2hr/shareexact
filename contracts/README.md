@@ -31,12 +31,15 @@ Owner-only configuration: `setFeed`, `removeFeed`, `setSequencerFeed`,
 
 Three properties worth checking in review:
 
-- **Observation never reverts; conversion fails closed.** `state()`, `priceOf()`,
-  `multiplierOf()`, `quote()` and `maxShares()` swallow third-party failures and
-  degrade to an explicit state or zero. `sharesToRaw`, `rawToShares`,
-  `requireFresh()` and `usdValue(..., false)` revert rather than guess a unit or
-  a price. An earlier README claimed "views never revert" — that was too broad
-  (`maxShares` used to call `rawToShares` and throw).
+- **Conversion fails closed. Observation has one hole.** A failed call, short
+  return data, and a dirty boolean are swallowed. `abi.decode` of
+  `latestRoundData()` still reverts when a `uint80` round id does not fit, and
+  that takes `state()`, `priceOf()`, and `quote()` with it. `multiplierOf()`
+  does not read a round. `sharesToRaw`, `rawToShares`, `requireFresh()` and
+  `usdValue(..., false)` revert rather than guess a unit or a price. An earlier
+  README claimed "views never revert" — that was too broad (`maxShares` used to
+  call `rawToShares` and throw). The `uint80` hole is the remaining one, and it
+  is still in the deployed guard.
 - **Staleness outranks `oraclePaused()`.** Robinhood documents that flag as
   advisory and not enforced on-chain, so it is a signal on top of the age check,
   never a replacement for it.

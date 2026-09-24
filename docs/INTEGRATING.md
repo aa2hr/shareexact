@@ -60,16 +60,25 @@ them is `STALE`. `requireFresh()` would stop your lending every weekend.
 
 ## Availability
 
-**`state()` cannot revert.** Every external read goes through a wrapped
-`staticcall` that swallows failures (`_tryUint`, `_tryBool`,
-`_tryLatestRoundData`). The sequencer check guards its subtraction against
-underflow. `_tryBool` reads the return word directly rather than
-`abi.decode(_, (bool))`, which reverts on a dirty word. The adversarial suite
+**`state()` reverts on one malformed feed shape.** A failed `staticcall`, short
+return data, and a dirty boolean are swallowed. `_tryBool` reads the word
+directly because `abi.decode(_, (bool))` reverts on anything other than 0 or 1.
+`_tryLatestRoundData` does not do that for the two `uint80` fields in
+`latestRoundData()`. A 160-byte payload whose `roundId` or `answeredInRound`
+does not fit in `uint80` makes `abi.decode` revert, and `state()`, `priceOf()`,
+and `usdValue()` revert with it. A canonical Chainlink round does not look like
+that. An earlier revision of this file said `state()` cannot revert, and cited
+`_tryBool` as the reason. That was wrong: the live guard still decodes the
+round that way. `_tryUint` is a different case. A `uint256` word has no range
+check, so `multiplierOf` does not revert on a dirty word.
+
+The sequencer subtraction is guarded against underflow. The adversarial suite
 covers dirty booleans, short return data, reverting feeds, and future
-timestamps.
+timestamps. It does not cover a dirty `uint80`.
 
 **No upgrade path.** No proxy, no `delegatecall`, no initializer. Both contracts
-are immutable; `ExactTransfer.guard` is an `immutable` field.
+are immutable; `ExactTransfer.guard` is an `immutable` field. Fixing the decode
+means a new guard, and a new `ExactTransfer` if you want transfers to follow it.
 
 **No custody.** The guard holds no tokens and has no function that can move
 them. The worst case for an integrator is a wrong answer, never a stolen
@@ -80,14 +89,29 @@ balance.
 in the contract: `MIN_STALENESS` 60s, `MAX_STALENESS` 7 days,
 `MAX_CORP_ACTION_WINDOW` 7 days, `MAX_SEQUENCER_GRACE` 1 day.
 
-What the owner **cannot** do matters more than what they can. The multiplier and
-`effectiveAt` are read from the token, never from owner-controlled storage, so
-the owner cannot forge a corporate action. `_corpActionImminent` returns false
-outright when `effectiveAt` is zero or already past, whatever the window is set
-to. The one real lever is widening the window around a change the token has
-genuinely scheduled — from 7200s today up to 7 days. That is a narrower risk
-than "the owner can block you at will", and it only exists while a real
-corporate action is pending.
+What the owner **cannot** do: the multiplier and `effectiveAt` are read from the
+token, never from owner-controlled storage, so the owner cannot forge a
+corporate action. `_corpActionImminent` returns false when `effectiveAt` is
+zero or already past.
+
+What the owner **can** do, inside those bounds:
+
+- Set `corpActionWindow` to `0`. There is no minimum. A readable pending change
+  then stops reporting `CORP_ACTION`. An unreadable `newUIMultiplier()` still
+  fails closed, and that path ignores the window.
+- Point `setSequencerFeed` at a contract that answers `0` or `1` at
+  configuration time and answers `1` later. The check does not stick.
+  `state()` then returns `SEQUENCER_DOWN`, and `ExactTransfer` reverts
+  `SequencerDown` for every token. On 24 Sep 2026 the live `sequencerFeed` was
+  unset, so this lever was not armed. It is still a lever.
+- Replace a registered price feed with another contract that passed
+  `decimals()` and `latestRoundData()` once. `ExactTransfer` does not read the
+  price. `usdValue` does.
+
+Widening the live 7200s window, up to 7 days, is one lever. It is not the only
+one, and it is not "the owner cannot block you". A sequencer feed that reports
+down blocks transfers with no corporate action pending. The owner is still the
+deployer EOA.
 
 Ownership is two-step (`transferOwnership` / `acceptOwnership`).
 
@@ -133,9 +157,11 @@ if (s == DataState.CORP_ACTION || s == DataState.ORACLE_PAUSED) {
 
 **Do not put this gate on `liquidate()`.** Refusing liquidation is a different
 risk: it can stop you from closing positions that are genuinely unhealthy, and
-the two states are not equally bounded. `CORP_ACTION` is self-limiting — it
-clears at `effectiveAt`, so it lasts at most `corpActionWindow()`, 7200s today.
-`ORACLE_PAUSED` has no bound; its duration is the issuer's operational choice.
+the two states are not equally bounded. When both multipliers can be read,
+`CORP_ACTION` lasts at most `corpActionWindow()`, 7200s today. When
+`newUIMultiplier()` cannot be read, it lasts until `effectiveAt`, which can be
+further out than the window. `ORACLE_PAUSED` has no bound; its duration is the
+issuer's operational choice.
 Blocking forced repayment for an unbounded period is a decision about your own
 book, and this contract should not make it for you. If you already refuse to
 liquidate on a dead feed, keep that logic yours and do not couple it to an

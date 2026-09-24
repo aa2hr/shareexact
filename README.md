@@ -98,12 +98,15 @@ all this contract claims to know. Session labelling lives off-chain.
 
 Design constraints it holds to:
 
-- **Observation never reverts; conversion fails closed.** `state()` and
-  `priceOf()` degrade to an explicit state on any third-party failure. But if the
-  multiplier cannot be read, `sharesToRaw`, `rawToShares` and a transfer all
-  revert rather than guess (`usdValue` does not, because a feed prices one raw
-  token and never needs the multiplier) — an unreadable ratio is not evidence of a 1:1 token,
-  and guessing wrong moves the wrong amount of money. See `docs/SECURITY.md`.
+- **Conversion fails closed. Observation has one hole.** A failed call, short
+  return data, and a dirty boolean do not revert `state()` or `priceOf()`. A
+  160-byte `latestRoundData()` whose `uint80` round ids do not fit still does.
+  A canonical Chainlink round does not look like that. The live guard still
+  decodes it. See `docs/INTEGRATING.md`. If the multiplier cannot be read,
+  `sharesToRaw`, `rawToShares` and a transfer all revert rather than guess
+  (`usdValue` does not, because a feed prices one raw token and never needs the
+  multiplier) — an unreadable ratio is not evidence of a 1:1 token, and guessing
+  wrong moves the wrong amount of money. See `docs/SECURITY.md`.
 - Staleness outranks the advisory `oraclePaused()` flag, because Robinhood
   documents that flag as not enforced on-chain.
 - No custody, no upgradeability, no admin function that can move a token. The

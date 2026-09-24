@@ -41,10 +41,12 @@ before a split is not.
 An earlier version of this README claimed view functions never revert. That was
 an overclaim and has been narrowed:
 
-- **Observation never reverts.** `state()`, `priceOf()`, `multiplierOf()`,
-  `ExactTransfer.quote()` and `ExactTransfer.maxShares()` degrade to an explicit
-  state or zero on any third-party failure, including malformed return data and
-  dirty boolean words.
+- **Observation does not revert on a failed call, short data, or a dirty boolean.**
+  It does revert when `latestRoundData()` returns 160 bytes and a `uint80`
+  field does not fit. That takes `state()`, `priceOf()`, `usdValue()`, and
+  `ExactTransfer.quote()` with it. `multiplierOf()` never reads a round, so a
+  dirty word there does not revert. This decode is still in the deployed guard.
+  See `docs/INTEGRATING.md`.
 - **Conversion fails closed.** `sharesToRaw()` and `rawToShares()` revert when
   the multiplier cannot be read, because returning a wrong unit moves a wrong
   amount of money. `usdValue()` is not in that list: a Chainlink feed prices one
