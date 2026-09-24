@@ -52,3 +52,4 @@ rhfeeds.json
 contracts/*-input.json
 .vercel
 .env*
+corp-action-watch.jsonl

@@ -10,6 +10,11 @@
 
 **The call every Robinhood Chain protocol should make before it moves money against a Stock Token.**
 
+ShareExact turns the share count you typed into the raw amount the chain will
+move, and reports a scheduled unit change that a fresh Chainlink round cannot
+see. It is not general corporate-action protection: a dividend with no future
+`effectiveAt` is not caught in advance.
+
 Integrators: [`docs/INTEGRATING.md`](docs/INTEGRATING.md).
 
 **Concretely:** on a token with a 4x multiplier, someone moving $10,000 of

@@ -157,10 +157,13 @@ states, not a recommendation for your liquidation path.
   registered reports `CORP_ACTION` directly. `state()` is single-valued, so
   something has to lose. If you care about the unit specifically, either treat
   any non-`FRESH` state as "do not act", or use `multiplierOf` above.
-- **Production history.** No Stock Token on 4663 has been through a corporate
-  action since these contracts were deployed. These invariants have not run
-  against a real split or dividend in production. Nothing here has been
-  earned by surviving one.
+- **Production history.** Robinhood's corporate-actions list shows a completed
+  GOOGL cash dividend with process date 14 Sep — before this guard's 20 Sep
+  deployment record. Nothing in that list is marked completed since. Later
+  entries, including NVDA on 1 Oct, are still in progress. So the scheduled
+  path has not been observed against a live event: these invariants have run
+  against mocks and a fuzzer, not against a real split or dividend. Nothing
+  here has been earned by surviving one.
 - **Hostile tokens.** The guard's staticcalls forward all remaining gas. A
   malicious token could grief a caller. Not a concern for canonical Stock
   Tokens; relevant if you ever point this at an arbitrary ERC-20.
