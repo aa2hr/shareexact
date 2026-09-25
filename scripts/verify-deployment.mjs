@@ -32,6 +32,9 @@ const RPC = {
 const SELECTOR = {
   guard: "0x7ceab3b1", // guard()
   owner: "0x8da5cb5b", // owner()
+  pendingOwner: "0xe30c3978", // pendingOwner()
+  getMinDelay: "0xf27a0c92", // getMinDelay()            — TimelockController
+  hasRole: "0x91d14854", // hasRole(bytes32,address)  — TimelockController
   corpActionWindow: "0x6eb3412c", // corpActionWindow()
   sequencerFeed: "0x3b521cb6", // sequencerFeed()
   state: "0x31e658a5", // state(address)
@@ -39,6 +42,9 @@ const SELECTOR = {
   feedOf: "0x4b45e8a6", // feedOf(address)
   isSupported: "0x4f129c53", // isSupported(address)
 };
+
+/// keccak256("PROPOSER_ROLE"), the role TimelockController requires to schedule.
+const PROPOSER_ROLE = "0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1";
 
 const STATE_NAME = [
   "FRESH",
@@ -121,9 +127,51 @@ async function main() {
 
   const owner = `0x${(await call(guardAddress, SELECTOR.owner)).slice(-40)}`;
   check("Guard has a non-zero owner", !/^0x0{40}$/.test(owner), owner);
-  if (/^0x0{40}$/.test(owner) === false && owner.toLowerCase() === record.deployer?.toLowerCase()) {
+
+  // Who owns the guard is the main trust assumption, so it is checked against
+  // what the record claims rather than merely printed. Without this, a handover
+  // could half-complete — or never happen — and nothing here would say so.
+  const gov = record.governance;
+  if (gov?.owner) {
+    check(
+      "Guard owner matches the recorded governance address",
+      owner.toLowerCase() === gov.owner.toLowerCase(),
+      `on chain ${owner}, recorded ${gov.owner}`,
+    );
+
+    // A non-zero pendingOwner means a two-step transfer was started and never
+    // accepted. The guard still answers to the old owner in that state.
+    const pending = `0x${(await call(guardAddress, SELECTOR.pendingOwner)).slice(-40)}`;
+    check(
+      "No half-finished ownership transfer",
+      /^0x0{40}$/.test(pending),
+      pending === "0x0000000000000000000000000000000000000000" ? "none" : `pendingOwner ${pending}`,
+    );
+
+    if (gov.kind === "timelock") {
+      const delay = word(await call(owner, SELECTOR.getMinDelay));
+      const expected = BigInt(gov.minDelaySeconds ?? 0);
+      check(
+        "Timelock delay is at least the recorded minimum",
+        delay > 0n && delay >= expected,
+        `${delay}s on chain, ${expected}s recorded`,
+      );
+
+      // A timelock with no live proposer can never schedule anything, which
+      // would freeze the guard's configuration permanently.
+      for (const p of gov.proposers ?? []) {
+        const has = word(await call(owner, SELECTOR.hasRole + PROPOSER_ROLE.slice(2) + pad(p)));
+        check(`Recorded proposer can still propose: ${p}`, has === 1n, has === 1n ? "yes" : "NO ROLE");
+      }
+      if ((gov.proposers ?? []).length === 0) {
+        console.log(
+          "        note: no proposers recorded. If none of them still holds PROPOSER_ROLE, guard configuration is frozen for good.",
+        );
+      }
+    }
+  } else if (owner.toLowerCase() === record.deployer?.toLowerCase()) {
     console.log(
-      "        note: owner is the deploying EOA. Fine for a demo; move to a multisig before anyone lends against this.",
+      "        note: owner is the deploying EOA and no governance block is recorded. Fine for a demo; SECURITY.md calls multisig and timelock prerequisites before anyone lends against this.",
     );
   }
 

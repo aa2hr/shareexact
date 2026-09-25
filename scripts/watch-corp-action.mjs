@@ -28,6 +28,7 @@
  *   node scripts/watch-corp-action.mjs --only NVDA           # just the one in progress
  *   node scripts/watch-corp-action.mjs --interval 120        # seconds, default 300
  *   node scripts/watch-corp-action.mjs --once                # single poll, for cron
+ *   node scripts/watch-corp-action.mjs --once --quiet        # ... and print only transitions
  */
 
 import { appendFileSync, readFileSync, existsSync } from "node:fs";
@@ -42,12 +43,40 @@ const arg = (n, d) => {
 const has = (n) => argv.includes(`--${n}`);
 
 const RPC = arg("rpc", process.env.ROBINHOOD_RPC_URL || "https://rpc.mainnet.chain.robinhood.com");
-const GUARD = arg("guard", "0x290558b05dec593af7b2ef6dbc26b9ffc38adb37");
 const RECORD = arg("record", "deployments/chain-4663.json");
+
+/**
+ * The deployment record is the only source of truth for which guard is live.
+ *
+ * This used to be a hard-coded address, which is a trap with a long fuse: after
+ * a redeploy the watcher keeps polling the old contract, writes `state: null`
+ * for every token, detects no transition, and exits zero. A watch that is
+ * silently watching nothing is worse than no watch, because it is believed.
+ * `--guard` still overrides, for pointing at a fork or a test deployment.
+ */
+let RECORD_JSON = null;
+try {
+  RECORD_JSON = JSON.parse(readFileSync(RECORD, "utf8"));
+} catch {
+  /* loadTokens() reports an unreadable record properly; nothing to say yet */
+}
+
+const GUARD = arg("guard", RECORD_JSON?.contracts?.ShareExactGuard?.address ?? "");
 const ONLY = arg("only", "");
 const INTERVAL = Number(arg("interval", "300")) * 1000;
 const LOG = arg("log", "corp-action-watch.jsonl");
 const ONCE = has("once");
+
+/**
+ * Print nothing unless something happened. For scheduled runs, where the
+ * console output is appended to a file that a human greps later: a banner on
+ * every poll buries the one line that matters under thousands that do not, and
+ * writing a regex to filter it back out is a second thing to get wrong. Quiet
+ * mode makes "the log is empty" mean "nothing happened", which needs no tool to
+ * read. Transitions, missed pauses and errors still print. The JSONL record is
+ * unaffected — every observation is still written there.
+ */
+const QUIET = has("quiet");
 
 // ---------------------------------------------------------------- abi
 
@@ -103,10 +132,8 @@ async function call(to, data) {
 // ---------------------------------------------------------------- inputs
 
 function loadTokens() {
-  let raw;
-  try {
-    raw = JSON.parse(readFileSync(RECORD, "utf8"));
-  } catch {
+  const raw = RECORD_JSON;
+  if (!raw) {
     console.error(`Could not read ${RECORD}. Run from the repo root.`);
     process.exit(1);
   }
@@ -259,7 +286,7 @@ function loadLast(rows) {
       if (o.symbol) last[o.symbol] = o;
     }
     const n = Object.keys(last).length;
-    if (n) console.log(`Resumed from ${LOG} (last observation for ${n} token(s)).`);
+    if (n && !QUIET) console.log(`Resumed from ${LOG} (last observation for ${n} token(s)).`);
   } catch {
     /* a truncated final line is not worth failing over */
   }
@@ -296,10 +323,12 @@ async function tick(rows, last) {
     appendFileSync(LOG, JSON.stringify(o) + "\n");
 
     if (!prev) {
-      console.log(
-        `${o.ts}  ${row.symbol.padEnd(6)} baseline  state=${o.state}  mult=${fmt18(o.current)}` +
-          `  effectiveAt=${o.tokenEffectiveAt || 0}  paused=${o.oraclePaused}`,
-      );
+      if (!QUIET) {
+        console.log(
+          `${o.ts}  ${row.symbol.padEnd(6)} baseline  state=${o.state}  mult=${fmt18(o.current)}` +
+            `  effectiveAt=${o.tokenEffectiveAt || 0}  paused=${o.oraclePaused}`,
+        );
+      }
     } else if (changes.length > 0) {
       console.log(`\n${o.ts}  ${row.symbol}  block ${o.block}`);
       for (const l of headline(o, changes)) console.log(`  ${l}`);
@@ -322,13 +351,46 @@ async function tick(rows, last) {
   }
 }
 
+/**
+ * Refuse to watch an address that holds no code. This is the check that turns
+ * the stale-address failure from a silent one into a loud one, and it costs a
+ * single eth_getCode at startup.
+ */
+async function assertGuardIsLive() {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(GUARD)) {
+    console.error(
+      `\n  No guard address. ${RECORD} has no contracts.ShareExactGuard.address,\n` +
+        `  and --guard was not given. Run: node scripts/record-deployment.mjs --chain 4663\n`,
+    );
+    process.exit(1);
+  }
+  let code;
+  try {
+    code = await rpc("eth_getCode", [GUARD, "latest"]);
+  } catch (e) {
+    console.error(`\n  Could not reach ${RPC}: ${e.message}\n`);
+    process.exit(1);
+  }
+  if (!code || code === "0x") {
+    console.error(
+      `\n  ${GUARD} holds no bytecode on chain ${RECORD_JSON?.chainId ?? "?"}.\n` +
+        `  The recorded guard is stale — every reading would be null and every\n` +
+        `  transition would be missed. Re-record the deployment before watching.\n`,
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
   const rows = loadTokens();
-  console.log(`RPC    ${RPC}`);
-  console.log(`guard  ${GUARD}`);
-  console.log(`watch  ${rows.map((r) => r.symbol).join(", ")}`);
-  console.log(`log    ${LOG}`);
-  console.log(ONCE ? "mode   single poll\n" : `mode   every ${INTERVAL / 1000}s (Ctrl-C to stop)\n`);
+  await assertGuardIsLive();
+  if (!QUIET) {
+    console.log(`RPC    ${RPC}`);
+    console.log(`guard  ${GUARD}`);
+    console.log(`watch  ${rows.map((r) => r.symbol).join(", ")}`);
+    console.log(`log    ${LOG}`);
+    console.log(ONCE ? "mode   single poll\n" : `mode   every ${INTERVAL / 1000}s (Ctrl-C to stop)\n`);
+  }
 
   const last = loadLast(rows);
   await tick(rows, last);

@@ -6,14 +6,14 @@
   "deployer": "0x589df831797e3891924397d7f99261a1cf70ce72",
   "contracts": {
     "ShareExactGuard": {
-      "address": "0x290558b05dec593af7b2ef6dbc26b9ffc38adb37",
-      "explorer": "https://robinhoodchain.blockscout.com/address/0x290558b05dec593af7b2ef6dbc26b9ffc38adb37",
+      "address": "0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5",
+      "explorer": "https://robinhoodchain.blockscout.com/address/0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5",
       "verified": true
     },
     "ExactTransfer": {
-      "address": "0x507b0d8e8558e899af3b511b083f73dfe17168ab",
-      "guard": "0x290558b05dec593af7b2ef6dbc26b9ffc38adb37",
-      "explorer": "https://robinhoodchain.blockscout.com/address/0x507b0d8e8558e899af3b511b083f73dfe17168ab",
+      "address": "0x032f454686d19a4753e4fBE955f5E52e86DEA346",
+      "guard": "0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5",
+      "explorer": "https://robinhoodchain.blockscout.com/address/0x032f454686d19a4753e4fBE955f5E52e86DEA346",
       "verified": true
     }
   },
