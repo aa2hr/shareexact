@@ -36,6 +36,18 @@ contained a private key is compromised whether or not the commit was pushed.
   immediate; bridging back out is the 7-day optimistic window, so send only what
   you are willing to leave there.
 
+Chain 4663 is an Arbitrum L2, and `gasUsedForL1` is charged against the
+transaction's gas limit. Foundry's default estimate is too small for calls
+under a few hundred thousand gas. On the testnet rehearsal, `execute` was sent
+with a 62,507 limit, consumed all 62,507 and reverted. `gasUsed == gasLimit` is
+the signature of running out. `cast run` replayed that same call using 45,255.
+The mainnet acceptance was sent with `--gas-limit 300000` and used 45,255
+([`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1)).
+Unused gas is refunded, so the margin is free. On every `forge script
+--broadcast` and `cast send` against 4663, pass `--gas-limit 300000` or raise
+`--gas-estimate-multiplier`. A reverted `execute` does not consume the scheduled
+operation: `_afterCall` never runs, so it stays ready and can be sent again.
+
 Explorers: `https://robinhoodchain.blockscout.com` for mainnet,
 `https://explorer.testnet.chain.robinhood.com` for testnet.
 
