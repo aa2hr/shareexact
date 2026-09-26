@@ -171,8 +171,8 @@ check that the desk and the guard agree about those eight.
 A fresh local clone without `ROBINHOOD_FEEDS` still labels unknown names as
 indicative / `NO_FEED`. That is intentional: the remaining symbols in
 `src/lib/feeds.generated.json` are shown by the desk and are not registered on
-the guard. Registering one is a single transaction. To point a local desk at a
-feed map:
+the guard. Registering one is a timelocked `setFeed`, not a same-block call
+from the old deployer. To point a local desk at a feed map:
 
 ```bash
 FEED_DIRECTORY_URL=<chainlink feed directory for chain 4663> npm run feeds:sync

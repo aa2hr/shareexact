@@ -182,7 +182,11 @@ export TIMELOCK_DELAY=86400
 export TIMELOCK_PROPOSERS=<SAFE>
 forge script script/DeployTimelock.s.sol --rpc-url robinhood --broadcast --verify
 
-# 2. guard + ExactTransfer owned by the EOA, feeds registered in the same run
+# 2. guard + ExactTransfer, owned by the EOA.
+#    Feeds are registered in this broadcast only when FEED_TOKENS and
+#    FEED_ADDRESSES are both set and GUARD_OWNER is the deployer.
+#    With neither variable set, this command registers nothing. Do section 3
+#    before step 3 if you still need them.
 forge script script/Deploy.s.sol --rpc-url robinhood --broadcast --verify
 
 # 3. point ownership at the timelock. Reversible: owner does not move yet

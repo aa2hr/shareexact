@@ -11,7 +11,7 @@ import {IShareExactGuard} from "../src/interfaces/IShareExactGuard.sol";
 /// Feeds are NOT hardcoded here. Robinhood's own documentation says the
 /// Chainlink feed list is the source of truth and should be read from there
 /// rather than baked into source, so the script takes them from the
-/// environment and the repo keeps a generated file under `app/src/lib/feeds`.
+/// environment and the repo keeps a generated file at `src/lib/feeds.generated.json`.
 ///
 /// Usage:
 ///   export PRIVATE_KEY=0x...

@@ -19,8 +19,9 @@ proof, not this paragraph.
 in one click on the explorer. Set it only after the click works.
 
 The remaining symbols in `src/lib/feeds.generated.json` are shown by the desk
-and report `NO_FEED` on-chain until registered. Registering one is a single
-transaction and blocked by nothing but gas. `npm run feeds:parity` prints the gap.
+and report `NO_FEED` on-chain until registered. Registering one is now a
+timelocked `setFeed`, not a same-block transaction from the deployer.
+`npm run feeds:parity` prints the gap.
 
 ## To deploy again
 
