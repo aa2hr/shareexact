@@ -91,7 +91,8 @@
     "proposers": ["0x588BbB3A33E61F081CFa2423FF507682450Ef3aC"]
   },
   "proofTransactions": {
-    "note": "No ExactShareTransfer has been sent to this ExactTransfer. The hash below settled on the retired helper 0x507b0d8e8558e899af3b511b083f73dfe17168ab.",
+    "note": "ExactShareTransfer on this ExactTransfer, 26 Sep 2026, block 73414480. 0.002 UI shares requested, 0.001998450882483378 raw moved, 0.001999999999999999 delivered, maxShortfall 1. The retired hash settled on helper 0x507b0d8e8558e899af3b511b083f73dfe17168ab.",
+    "exactShareTransfer": "0x245e8968160c2ef8a4e006bb81317ccacf024b1703476408231c0e8d70dc2a30",
     "retiredExactShareTransfer": "0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03"
   }
 }

@@ -17,8 +17,12 @@ Chainlink feeds are registered on this guard. The owner is the timelock
 `0x1586de8B6eEBf195faC0f8604825dD331aA74d41`, accepted in
 [`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1).
 `pendingOwner` is zero. Runbook: `docs/DEPLOY.md`
-**Proof of this deployment:** the deploy transactions in the record. No
-`ExactShareTransfer` has been sent to `0x032f…A346` yet.
+**Proof of this deployment:**
+[`0x245e8968…dc2a30`](https://robinhoodchain.blockscout.com/tx/0x245e8968160c2ef8a4e006bb81317ccacf024b1703476408231c0e8d70dc2a30)
+— a guarded send through `transferShares` on `0x032f…A346`, 26 Sep 2026,
+block 73414480. 0.002 UI shares requested; 0.001998450882483378 raw moved at
+multiplier 1.000775159164630595, delivering 0.001999999999999999 shares. The
+1 wei shortfall was accepted explicitly rather than rounded away.
 
 Prior deployment's proof transactions (retired guard `0x2dd1d4c1…`, replaced 20 Sep 2026 for the fix below):
 [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29),
@@ -52,8 +56,9 @@ whenever the feed was stale or paused. `ExactTransfer` now calls
 `unitChangeImminent`, which reads the token and not the feed registry. The
 window has a floor of 10 minutes. Observation loads round words directly.
 Covered by `contracts/test/Hardening.t.sol`. Deployed in block 72442933 by
-`0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408`. No share has moved through this
-ExactTransfer.
+`0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408`. The guarded send on this
+ExactTransfer is
+[`0x245e8968…dc2a30`](https://robinhoodchain.blockscout.com/tx/0x245e8968160c2ef8a4e006bb81317ccacf024b1703476408231c0e8d70dc2a30).
 
 ## The problem, with a number
 
