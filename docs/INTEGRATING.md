@@ -116,7 +116,10 @@ feed that reports down blocks transfers with no corporate action pending.
 Since [`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1)
 (2026-09-26 20:18:21 UTC) the owner is the timelock
 `0x1586de8B6eEBf195faC0f8604825dD331aA74d41` and `pendingOwner` is zero.
-The deployer EOA can no longer change a feed or the window in the same block.
+The deployer EOA `0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408` holds no
+timelock role and cannot schedule or cancel by itself. It is one of the three
+Safe owners, so it holds one of the two signatures a schedule needs, and it
+cannot change a feed or the window in the same block.
 The proposer is the 2-of-3 Safe `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`.
 Every `setFeed`, `setCorpActionWindow` and `setSequencerFeed` waits the 24h
 `minDelay`. Execution after the delay is open.
@@ -214,7 +217,7 @@ states, not a recommendation for your liquidation path.
 
 | | |
 | --- | --- |
-| Guard owner | timelock `0x1586…A74d`, accepted in `0x40be6a34…229cd1`. Proposer is Safe `0x588B…f3aC`. Delay 24h |
+| Guard owner | timelock `0x1586…A74d`, accepted in `0x40be6a34…229cd1`. Proposer is Safe `0x588B…f3aC`, threshold 2 of 3. The deployer EOA is one owner, not a timelock role |
 | Upgradeability | none |
 | Tests | 87 Foundry, 0 failed, including the adversarial and hardening suites |
 | Audit | none. Reviewed twice externally; both rounds are in `docs/SECURITY.md` |

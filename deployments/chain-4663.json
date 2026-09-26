@@ -88,7 +88,18 @@
     "kind": "timelock",
     "owner": "0x1586de8B6eEBf195faC0f8604825dD331aA74d41",
     "minDelaySeconds": 86400,
-    "proposers": ["0x588BbB3A33E61F081CFa2423FF507682450Ef3aC"]
+    "proposers": ["0x588BbB3A33E61F081CFa2423FF507682450Ef3aC"],
+    "safe": {
+      "address": "0x588BbB3A33E61F081CFa2423FF507682450Ef3aC",
+      "version": "1.5.0",
+      "singleton": "0xEdd160fEBBD92E350D4D398fb636302fccd67C7e",
+      "threshold": 2,
+      "owners": [
+        "0x0f090e8F3958B164E1942Ab1501c739f89d35D38",
+        "0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408",
+        "0x0fF85FbB713702Aa1ad8b8C50673897d9682Be83"
+      ]
+    }
   },
   "proofTransactions": {
     "note": "ExactShareTransfer on this ExactTransfer, 26 Sep 2026, block 73414480. 0.002 UI shares requested, 0.001998450882483378 raw moved, 0.001999999999999999 delivered, maxShortfall 1. The retired hash settled on helper 0x507b0d8e8558e899af3b511b083f73dfe17168ab.",

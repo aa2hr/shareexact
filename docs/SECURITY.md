@@ -183,8 +183,11 @@ Known and not fixed:
 - Guard configuration is the timelock `0x1586de8B6eEBf195faC0f8604825dD331aA74d41`,
   accepted 26 Sep 2026 in `0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1`.
   `pendingOwner` is zero. The proposer is the 2-of-3 Safe
-  `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`. The deployer EOA is not a
-  proposer and can no longer change a feed or the window in the same block.
+  `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`. The deployer EOA
+  `0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408` holds no timelock role, so it
+  cannot schedule or cancel by itself. It is one of the three Safe owners, so
+  it holds one of the two signatures a schedule needs. It cannot change a feed
+  or the window in the same block.
   Every such change waits 24 hours. The window still cannot be set to zero,
   and it can still be moved from 10 minutes to 7 days once the delay has
   passed. The owner cannot set `effectiveAt` or the multiplier. Both are read
