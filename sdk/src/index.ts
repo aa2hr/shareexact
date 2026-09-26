@@ -52,6 +52,11 @@ export interface StockTokenState {
   priceUpdatedAt: number | null;
   ageSeconds: number | null;
   dataState: DataState;
+  /**
+   * Scheduled unit change, asked on its own. `dataState` can be `STALE` or
+   * `ORACLE_PAUSED` while this is true. Do not infer it from the label.
+   */
+  unitChangeImminent: boolean;
 }
 
 export interface ReadOptions {
@@ -149,7 +154,7 @@ export function classifyDataState(input: {
 }): DataState {
   if (!input.sequencerOk) return "SEQUENCER_DOWN";
   if (!input.hasFeed) {
-    if (corpActionImminent(input)) return "CORP_ACTION";
+    if (unitChangeImminent(input)) return "CORP_ACTION";
     return "NO_FEED";
   }
   if (input.price === null || input.price <= 0 || !input.updatedAt) return "STALE";
@@ -158,11 +163,11 @@ export function classifyDataState(input: {
   if (input.updatedAt > input.now) return "STALE";
   if (input.now > input.updatedAt && input.now - input.updatedAt > input.maxStaleness) return "STALE";
   if (input.oraclePaused) return "ORACLE_PAUSED";
-  if (corpActionImminent(input)) return "CORP_ACTION";
+  if (unitChangeImminent(input)) return "CORP_ACTION";
   return "FRESH";
 }
 
-function corpActionImminent(input: Parameters<typeof classifyDataState>[0]): boolean {
+export function unitChangeImminent(input: Parameters<typeof classifyDataState>[0]): boolean {
   // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
   // multiplier fails closed for any future effectiveAt, before the window.
   if (input.effectiveAt == null || input.effectiveAt <= input.now) return false;
@@ -223,6 +228,20 @@ export async function readStockToken(
     if (updated !== null && updated > 0n) priceUpdatedAt = Number(updated);
   }
 
+  const moving = unitChangeImminent({
+    sequencerOk: options.sequencerOk ?? true,
+    hasFeed: Boolean(options.feed),
+    price,
+    updatedAt: priceUpdatedAt,
+    now,
+    maxStaleness,
+    oraclePaused,
+    effectiveAt,
+    multiplier,
+    pendingMultiplier,
+    corpActionWindow,
+  });
+
   const dataState = classifyDataState({
     sequencerOk: options.sequencerOk ?? true,
     hasFeed: Boolean(options.feed),
@@ -247,6 +266,7 @@ export async function readStockToken(
     priceUpdatedAt,
     ageSeconds: priceUpdatedAt ? Math.max(0, now - priceUpdatedAt) : null,
     dataState,
+    unitChangeImminent: moving,
   };
 }
 
@@ -254,17 +274,20 @@ export async function readStockToken(
 export const isPriceable = (state: DataState): boolean => state === "FRESH";
 
 /**
- * True when share <-> raw conversion can be executed. A weaker bar than pricing
- * on purpose: moving shares needs the multiplier, not the price, so a weekend
- * transfer is fine while a pending split is not.
+ * True when a share conversion may be sent.
  *
- * Named for what it actually checks. The earlier name, `isTransferSafe`, implied
- * a judgement about whether transferring is a good idea — which depends on
- * price, liquidity, issuer status, compliance and asset-specific trading
- * capability, none of which this function looks at.
+ * A weekend `STALE` label does not block by itself. A scheduled unit change
+ * does, and `state()` will not show it while the feed is stale or paused.
+ * Pass `unitChangeImminent` from the token read. Passing only the label is
+ * how a pending split was reported as executable.
  */
-export const isShareConversionExecutable = (state: DataState): boolean =>
-  state !== "CORP_ACTION" && state !== "SEQUENCER_DOWN";
+export function isShareConversionExecutable(input: {
+  dataState: DataState;
+  unitChangeImminent: boolean;
+}): boolean {
+  if (input.dataState === "SEQUENCER_DOWN" || input.dataState === "CORP_ACTION") return false;
+  return !input.unitChangeImminent;
+}
 
 /**
  * @deprecated Misleadingly broad name. Use `isShareConversionExecutable`.

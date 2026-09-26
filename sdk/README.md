@@ -29,7 +29,7 @@ const raw = sharesToRaw(12n * 10n ** 18n, nvda.multiplier); // exact units for 1
 | State | What happened | What you should do |
 | --- | --- | --- |
 | `FRESH` | Feed inside its heartbeat | Price freely |
-| `STALE` | Feed is holding its last value | Normal every weekend and holiday. Do not liquidate on it |
+| `STALE` | Feed is holding its last value | Normal every weekend. Do not liquidate on it. A send is allowed only if no unit change is scheduled. The label will not say so |
 | `ORACLE_PAUSED` | Issuer raised `oraclePaused()` | Advisory only; staleness still governs |
 | `CORP_ACTION` | A new `uiMultiplier` activates soon | Do not settle share-denominated quotes across it |
 | `SEQUENCER_DOWN` | L2 uptime feed down or in grace | Trust nothing |
@@ -38,8 +38,9 @@ const raw = sharesToRaw(12n * 10n ** 18n, nvda.multiplier); // exact units for 1
 ## Why `isShareConversionExecutable` is weaker than `isPriceable`
 
 Moving shares needs the multiplier. Pricing shares needs the feed. Those fail
-independently, so they get separate checks: a weekend transfer is perfectly
-safe, and a transfer quoted seconds before a stock split is not.
+independently. A weekend transfer is allowed when `unitChangeImminent` is
+false. It is not allowed merely because the label is `STALE`: that label is
+reported instead of a pending split. `isShareConversionExecutable` takes both.
 
 The precedence order here is identical to `ShareExactGuard.sol`, and both are
 covered by tests, so the SDK and the chain cannot give different answers.

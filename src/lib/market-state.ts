@@ -60,7 +60,7 @@ export function classifyDataState(input: ClassifyInput): DataState {
   //    multiplier, not the price, so a pending split is CORP_ACTION even when
   //    no aggregator is registered.
   if (!input.hasFeed) {
-    if (corpActionImminent(input)) return "CORP_ACTION";
+    if (unitChangeImminent(input)) return "CORP_ACTION";
     return "NO_FEED";
   }
 
@@ -78,12 +78,12 @@ export function classifyDataState(input: ClassifyInput): DataState {
   if (input.oraclePaused) return "ORACLE_PAUSED";
 
   // 6. Imminent corporate action. A scheduled no-op does not count.
-  if (corpActionImminent(input)) return "CORP_ACTION";
+  if (unitChangeImminent(input)) return "CORP_ACTION";
 
   return "FRESH";
 }
 
-function corpActionImminent(input: ClassifyInput): boolean {
+export function unitChangeImminent(input: ClassifyInput): boolean {
   // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
   // multiplier fails closed for any future effectiveAt, before the window.
   // The window applies only once both multipliers can be compared.
@@ -101,12 +101,17 @@ export function isTradeable(state: DataState): boolean {
 }
 
 /**
- * True when unit conversion (shares <-> raw) can be executed, which is a weaker
- * bar than pricing. Named for what it checks: it says nothing about whether the
- * transfer is economically or legally advisable.
+ * True when a share conversion may be sent.
+ *
+ * `STALE` by itself does not block. `STALE` together with a scheduled unit
+ * change does. The label hides the second fact, so pass it in.
  */
-export function isShareConversionExecutable(state: DataState): boolean {
-  return state !== "CORP_ACTION" && state !== "SEQUENCER_DOWN";
+export function isShareConversionExecutable(input: {
+  dataState: DataState;
+  unitChangeImminent: boolean;
+}): boolean {
+  if (input.dataState === "SEQUENCER_DOWN" || input.dataState === "CORP_ACTION") return false;
+  return !input.unitChangeImminent;
 }
 
 /** @deprecated Too broad a name. Use `isShareConversionExecutable`. */

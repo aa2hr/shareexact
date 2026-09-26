@@ -4,6 +4,7 @@ import {
   classifyDataState,
   formatAge,
   isShareConversionExecutable,
+  unitChangeImminent,
   type ClassifyInput,
 } from "./market-state.ts";
 
@@ -97,12 +98,35 @@ test("already-applied multiplier change is not pending", () => {
   assert.equal(state, "FRESH");
 });
 
-test("transfers survive a stale price but not a pending corporate action", () => {
-  // The deliberate asymmetry: a transfer needs the multiplier, not the price.
-  assert.equal(isShareConversionExecutable("STALE"), true);
-  assert.equal(isShareConversionExecutable("ORACLE_PAUSED"), true);
-  assert.equal(isShareConversionExecutable("CORP_ACTION"), false);
-  assert.equal(isShareConversionExecutable("SEQUENCER_DOWN"), false);
+test("a stale price does not hide a pending unit change from the send check", () => {
+  const staleSplit = input({
+    updatedAt: NOW - 50 * 3600,
+    effectiveAt: NOW + 1800,
+    pendingMultiplier: 4n * WAD,
+  });
+  assert.equal(classifyDataState(staleSplit), "STALE");
+  assert.equal(unitChangeImminent(staleSplit), true);
+  assert.equal(
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: true }),
+    false,
+  );
+  assert.equal(
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: false }),
+    true,
+  );
+  assert.equal(
+    isShareConversionExecutable({ dataState: "ORACLE_PAUSED", unitChangeImminent: false }),
+    true,
+  );
+  assert.equal(
+    isShareConversionExecutable({ dataState: "ORACLE_PAUSED", unitChangeImminent: true }),
+    false,
+  );
+  assert.equal(isShareConversionExecutable({ dataState: "CORP_ACTION", unitChangeImminent: true }), false);
+  assert.equal(
+    isShareConversionExecutable({ dataState: "SEQUENCER_DOWN", unitChangeImminent: false }),
+    false,
+  );
 });
 
 test("a feed timestamp in the future is stale, not maximally fresh", () => {

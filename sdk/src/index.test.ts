@@ -5,6 +5,7 @@ import {
   classifyDataState,
   isShareConversionExecutable,
   readStockToken,
+  unitChangeImminent,
   type CallFn,
   type DataState,
 } from "./index.ts";
@@ -61,10 +62,47 @@ test("a feed timestamp in the future is stale, not maximally fresh", () => {
   assert.equal(classify({ updatedAt: NOW + 3600 }), "STALE");
 });
 
-test("share conversion survives STALE and is blocked by CORP_ACTION", () => {
-  assert.equal(isShareConversionExecutable("STALE"), true);
-  assert.equal(isShareConversionExecutable("CORP_ACTION"), false);
-  assert.equal(isShareConversionExecutable("SEQUENCER_DOWN"), false);
+test("STALE does not mean the unit is stable", () => {
+  const weekend = {
+    sequencerOk: true,
+    hasFeed: true,
+    updatedAt: NOW - 50 * 3600,
+    price: 178.4,
+    now: NOW,
+    maxStaleness: 26 * 3600,
+    oraclePaused: false,
+    effectiveAt: null as number | null,
+    multiplier: WAD,
+    pendingMultiplier: WAD,
+    corpActionWindow: 7200,
+  };
+  assert.equal(classify(weekend), "STALE");
+  assert.equal(unitChangeImminent(weekend), false);
+  assert.equal(
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: false }),
+    true,
+  );
+
+  const staleSplit = {
+    ...weekend,
+    effectiveAt: NOW + 1800,
+    pendingMultiplier: 4n * WAD,
+  };
+  assert.equal(classify(staleSplit), "STALE");
+  assert.equal(unitChangeImminent(staleSplit), true);
+  assert.equal(
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: true }),
+    false,
+  );
+  assert.equal(isShareConversionExecutable({ dataState: "CORP_ACTION", unitChangeImminent: true }), false);
+  assert.equal(
+    isShareConversionExecutable({ dataState: "SEQUENCER_DOWN", unitChangeImminent: false }),
+    false,
+  );
+  assert.equal(
+    isShareConversionExecutable({ dataState: "ORACLE_PAUSED", unitChangeImminent: true }),
+    false,
+  );
 });
 
 function mockCall(map: Record<string, string | null>): CallFn {

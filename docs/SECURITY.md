@@ -25,16 +25,17 @@ The single table that describes the system's behaviour:
 | Feed malformed, reverting, or returning a dirty word | Reported STALE / unreadable, never a revert in an observation function |
 | Feed timestamp in the future | STALE. A future timestamp is a broken feed, not a fresher one |
 | Sequencer down or inside grace | SEQUENCER_DOWN; transfers revert |
-| Corporate action imminent | CORP_ACTION; transfers revert |
-| Price stale (weekend, holiday) | Pricing blocked, **transfers allowed** |
-| Oracle paused by issuer | Pricing blocked, **transfers allowed** |
+| Corporate action imminent | Transfers revert. `state()` may still say `STALE` or `ORACLE_PAUSED`. The send asks `unitChangeImminent`, not the label |
+| Price stale, no scheduled unit change | Pricing blocked, transfers allowed |
+| Oracle paused, no scheduled unit change | Pricing blocked, transfers allowed |
 | Rounding shortfall above the caller's tolerance | Revert, on both routes |
 | Rounding shortfall within tolerance | Executes. `ExactShareTransfer` logs the requested shares, the delivered shares and the `maxShortfall` the sender declared, so an indexer can tell an accepted rounding from an unnoticed one |
 
 Two rows deserve emphasis because they look like inconsistencies and are not.
 Moving shares needs the multiplier; pricing shares needs the feed. Those fail
-independently, so a weekend transfer is safe and a transfer quoted seconds
-before a split is not.
+independently, so a weekend transfer is allowed when no unit change is
+scheduled. A stale or paused label does not mean the unit is stable. A
+transfer quoted across a scheduled change reverts even if the feed is stale.
 
 ## What "never reverts" means here, precisely
 
