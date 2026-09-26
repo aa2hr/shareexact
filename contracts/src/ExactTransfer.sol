@@ -141,8 +141,7 @@ contract ExactTransfer {
 
         // A zero request is not executable: `transferShares` reverts
         // `ZeroAmount`. Nor is one that floors away to nothing.
-        executable =
-            uiShares != 0 && raw != 0 && !unitMoving && dataState != DataState.SEQUENCER_DOWN;
+        executable = uiShares != 0 && raw != 0 && !unitMoving && dataState != DataState.SEQUENCER_DOWN;
     }
 
     /// @notice Largest whole share amount `holder` can send without a shortfall.
@@ -153,7 +152,8 @@ contract ExactTransfer {
     function maxShares(address token, address holder) external view returns (uint256) {
         (uint256 current,,) = guard.multiplierOf(token);
         if (current == 0) return 0;
-        (bool ok, bytes memory data) = token.staticcall(abi.encodeWithSelector(IERC20.balanceOf.selector, holder));
+        (bool ok, bytes memory data) =
+            token.staticcall(abi.encodeWithSelector(IERC20.balanceOf.selector, holder));
         if (!ok || data.length < 32) return 0;
         uint256 rawBalance = abi.decode(data, (uint256));
         return Math.mulDiv(rawBalance, current, WAD);

@@ -99,7 +99,7 @@ contract ExampleCollateralPool {
         valueUsd18 = raw == 0 ? 0 : guard.usdValue(collateral, raw, true);
         debt = debtUsd18[user];
         uint256 updatedAt;
-        (, , updatedAt, state) = guard.priceOf(collateral);
+        (,, updatedAt, state) = guard.priceOf(collateral);
         markAge = updatedAt == 0 || updatedAt > block.timestamp ? 0 : block.timestamp - updatedAt;
     }
 
@@ -111,10 +111,8 @@ contract ExampleCollateralPool {
     function liquidate(address user) external {
         DataState state = guard.state(collateral);
         if (state != DataState.FRESH) {
-            (, , uint256 updatedAt, ) = guard.priceOf(collateral);
-            emit LiquidationDeclined(
-                user, state, updatedAt == 0 ? 0 : block.timestamp - updatedAt
-            );
+            (,, uint256 updatedAt,) = guard.priceOf(collateral);
+            emit LiquidationDeclined(user, state, updatedAt == 0 ? 0 : block.timestamp - updatedAt);
             revert NotFresh(collateral, state);
         }
 
@@ -135,9 +133,8 @@ contract ExampleCollateralPool {
     ///      than waved away, because an example whose static analysis is dirty
     ///      teaches the wrong lesson.
     function _safeTransferFrom(address from, address to, uint256 value) internal {
-        (bool ok, bytes memory data) = collateral.call(
-            abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value)
-        );
+        (bool ok, bytes memory data) =
+            collateral.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         if (!ok || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
     }
 

@@ -48,7 +48,9 @@ contract CorpActionCoverageTest is Test {
         vm.prank(ALICE);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ExactTransfer.MultiplierChangePending.selector, address(registered), block.timestamp + 30 minutes
+                ExactTransfer.MultiplierChangePending.selector,
+                address(registered),
+                block.timestamp + 30 minutes
             )
         );
         exact.transferShares(address(registered), BOB, 1e18, 0);
@@ -70,7 +72,9 @@ contract CorpActionCoverageTest is Test {
         vm.prank(ALICE);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ExactTransfer.MultiplierChangePending.selector, address(unregistered), block.timestamp + 30 minutes
+                ExactTransfer.MultiplierChangePending.selector,
+                address(unregistered),
+                block.timestamp + 30 minutes
             )
         );
         exact.transferShares(address(unregistered), BOB, 1e18, 0);

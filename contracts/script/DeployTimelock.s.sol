@@ -44,14 +44,14 @@ contract DeployTimelock is Script {
         require(proposers.length > 0, "TIMELOCK_PROPOSERS is empty: the timelock would be unusable");
         for (uint256 i = 0; i < proposers.length; i++) {
             require(proposers[i] != address(0), "proposer is the zero address");
-                        // On mainnet the proposer must not be the deploying key, or the
+            // On mainnet the proposer must not be the deploying key, or the
             // timelock is just that key with extra steps. On a rehearsal chain
             // it may be, so the ceremony can be walked with one funded account.
             if (block.chainid == 4663) {
                 require(proposers[i] != vm.addr(pk), "proposer is the deployer EOA: that defeats the point");
             }
         }
-                // The floor is a mainnet property. On any other chain this is a
+        // The floor is a mainnet property. On any other chain this is a
         // rehearsal, and the point of a rehearsal is to walk the whole ceremony
         // without waiting out a real notice period.
         if (block.chainid == 4663) {

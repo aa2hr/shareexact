@@ -82,8 +82,9 @@ contract HandoverTest is Test {
 
         MockStockToken t2 = new MockStockToken("T2", "T2", 1e18);
         MockFeed f2 = new MockFeed(8, 100e8, block.timestamp);
-        bytes memory setFeed =
-            abi.encodeWithSelector(ShareExactGuard.setFeed.selector, address(t2), address(f2), uint64(26 hours));
+        bytes memory setFeed = abi.encodeWithSelector(
+            ShareExactGuard.setFeed.selector, address(t2), address(f2), uint64(26 hours)
+        );
         bytes32 salt2 = keccak256("setFeed.t2");
 
         // The EOA has no authority any more.

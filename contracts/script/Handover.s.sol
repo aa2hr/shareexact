@@ -90,7 +90,9 @@ contract Handover is Script {
         console2.log("pendingOwner set to:", guard.pendingOwner());
         console2.log("owner still:        ", guard.owner());
         console2.log("");
-        console2.log("Now schedule acceptOwnership() from the Safe. Run --sig \"calldata_()\" for the fields.");
+        console2.log(
+            "Now schedule acceptOwnership() from the Safe. Run --sig \"calldata_()\" for the fields."
+        );
     }
 
     /*//////////////////////////////////////////////////////////////

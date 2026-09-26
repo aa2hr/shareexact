@@ -235,7 +235,11 @@ contract ShareExactGuard is IShareExactGuard {
         effectiveAt = e;
     }
 
-    function feedOf(address token) external view returns (address feed, uint64 maxStaleness, uint8 decimals_) {
+    function feedOf(address token)
+        external
+        view
+        returns (address feed, uint64 maxStaleness, uint8 decimals_)
+    {
         FeedConfig memory cfg = _feeds[token];
         return (cfg.feed, cfg.maxStaleness, cfg.decimals);
     }
@@ -398,7 +402,7 @@ contract ShareExactGuard is IShareExactGuard {
 
     /// @inheritdoc IShareExactGuard
     function usdValue(address token, uint256 raw, bool allowStale) external view returns (uint256 value18) {
-        (DataState s, uint256 price, , uint8 dec) = _evaluate(token);
+        (DataState s, uint256 price,, uint8 dec) = _evaluate(token);
         if (!allowStale && s != DataState.FRESH) revert DataNotFresh(token, s);
         if (price == 0) return 0;
         // The feed prices ONE raw token and already includes the multiplier, so
@@ -452,7 +456,11 @@ contract ShareExactGuard is IShareExactGuard {
     ///      This contract never uses `roundId` or `answeredInRound`. The fix is
     ///      to stop reading them at all, so a dirty value in a field we ignore
     ///      cannot take down an observation function.
-    function _tryLatestRoundData(address feed) internal view returns (bool ok, int256 answer, uint256 updatedAt) {
+    function _tryLatestRoundData(address feed)
+        internal
+        view
+        returns (bool ok, int256 answer, uint256 updatedAt)
+    {
         (bool success, bytes memory data) =
             feed.staticcall(abi.encodeWithSelector(AggregatorV3Interface.latestRoundData.selector));
         if (!success || data.length < 160) return (false, 0, 0);

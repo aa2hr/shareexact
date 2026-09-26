@@ -12,7 +12,7 @@ This directory is the single place addresses live. It is not empty.
 | Share-transfer proof | none on this ExactTransfer. [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03) settled on the retired 20 Sep helper `0x507b…68ab` |
 | Rehearsal | [`chain-46630.json`](./chain-46630.json) on testnet |
 
-`npm run deploy:verify` runs 16 checks against live chain state. That is the
+`npm run deploy:verify` runs 20 checks against live chain state. That is the
 proof, not this paragraph.
 
 `"verified": true` in the JSON is a claim about something a reviewer can check

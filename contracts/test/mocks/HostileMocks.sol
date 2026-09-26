@@ -74,11 +74,7 @@ contract FutureFeed {
         return "FUTURE / USD";
     }
 
-    function latestRoundData()
-        external
-        view
-        returns (uint80, int256, uint256, uint256, uint80)
-    {
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         uint256 ts = block.timestamp + _skew;
         return (1, 178_40_000_000, ts, ts, 1);
     }

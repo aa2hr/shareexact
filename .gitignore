@@ -53,3 +53,10 @@ contracts/*-input.json
 .vercel
 .env*
 corp-action-watch.jsonl
+
+# Working files, not deliverables
+NFT-API/
+*.patch
+corp-action-watch.jsonl
+watch-nvda.log
+contracts/*Flat.sol

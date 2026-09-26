@@ -95,9 +95,7 @@ contract ExactTransferTest is Test {
         odd.approve(address(exact), type(uint256).max);
 
         uint256 want = 1e18 + 1;
-        vm.expectRevert(
-            abi.encodeWithSelector(ExactTransfer.ShareShortfall.selector, want, 1e18 - 1, 0)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ExactTransfer.ShareShortfall.selector, want, 1e18 - 1, 0));
         exact.transferShares(address(odd), BOB, want, 0);
 
         // With an explicit tolerance the caller opts in knowingly.
@@ -117,9 +115,7 @@ contract ExactTransferTest is Test {
 
     function test_insufficientBalanceUsesRawTerms() public {
         vm.prank(ALICE);
-        vm.expectRevert(
-            abi.encodeWithSelector(ExactTransfer.InsufficientShareBalance.selector, 10e18, 25e18)
-        );
+        vm.expectRevert(abi.encodeWithSelector(ExactTransfer.InsufficientShareBalance.selector, 10e18, 25e18));
         exact.transferShares(address(crwd), BOB, 100e18, 0);
     }
 

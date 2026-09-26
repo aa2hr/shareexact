@@ -24,14 +24,20 @@ contract DirtyFeed {
     uint256 public roundIdWord = 1;
     uint256 public answeredInRoundWord = 1;
 
-    function setRoundId(uint256 w) external { roundIdWord = w; }
-    function setAnsweredInRound(uint256 w) external { answeredInRoundWord = w; }
+    function setRoundId(uint256 w) external {
+        roundIdWord = w;
+    }
+
+    function setAnsweredInRound(uint256 w) external {
+        answeredInRoundWord = w;
+    }
 
     fallback(bytes calldata data) external returns (bytes memory) {
         bytes4 sel = bytes4(data[:4]);
         if (sel == bytes4(keccak256("decimals()"))) return abi.encode(uint8(8));
         if (sel == bytes4(keccak256("latestRoundData()"))) {
-            return abi.encode(roundIdWord, int256(400e8), block.timestamp, block.timestamp, answeredInRoundWord);
+            return
+                abi.encode(roundIdWord, int256(400e8), block.timestamp, block.timestamp, answeredInRoundWord);
         }
         return abi.encode(uint256(0));
     }
@@ -79,7 +85,9 @@ contract HardeningTest is Test {
 
         vm.prank(ALICE);
         vm.expectRevert(
-            abi.encodeWithSelector(ExactTransfer.MultiplierChangePending.selector, address(tok), block.timestamp + 100)
+            abi.encodeWithSelector(
+                ExactTransfer.MultiplierChangePending.selector, address(tok), block.timestamp + 100
+            )
         );
         exact.transferShares(address(tok), BOB, 1e18, 0);
     }
@@ -94,7 +102,9 @@ contract HardeningTest is Test {
 
         vm.prank(ALICE);
         vm.expectRevert(
-            abi.encodeWithSelector(ExactTransfer.MultiplierChangePending.selector, address(tok), block.timestamp + 100)
+            abi.encodeWithSelector(
+                ExactTransfer.MultiplierChangePending.selector, address(tok), block.timestamp + 100
+            )
         );
         exact.transferShares(address(tok), BOB, 1e18, 0);
     }
@@ -147,14 +157,26 @@ contract HardeningTest is Test {
         guard.setFeed(address(t2), address(df), 26 hours);
         df.setRoundId(type(uint256).max);
 
-        assertTrue(_survives(address(guard), abi.encodeWithSelector(ShareExactGuard.state.selector, address(t2))), "state");
-        assertTrue(_survives(address(guard), abi.encodeWithSelector(ShareExactGuard.priceOf.selector, address(t2))), "priceOf");
         assertTrue(
-            _survives(address(guard), abi.encodeWithSelector(ShareExactGuard.usdValue.selector, address(t2), uint256(1e18), true)),
+            _survives(address(guard), abi.encodeWithSelector(ShareExactGuard.state.selector, address(t2))),
+            "state"
+        );
+        assertTrue(
+            _survives(address(guard), abi.encodeWithSelector(ShareExactGuard.priceOf.selector, address(t2))),
+            "priceOf"
+        );
+        assertTrue(
+            _survives(
+                address(guard),
+                abi.encodeWithSelector(ShareExactGuard.usdValue.selector, address(t2), uint256(1e18), true)
+            ),
             "usdValue"
         );
         assertTrue(
-            _survives(address(exact), abi.encodeWithSelector(ExactTransfer.quote.selector, address(t2), uint256(1e18))),
+            _survives(
+                address(exact),
+                abi.encodeWithSelector(ExactTransfer.quote.selector, address(t2), uint256(1e18))
+            ),
             "quote"
         );
         // And the answer is still usable: the ignored field changes nothing.
@@ -168,7 +190,10 @@ contract HardeningTest is Test {
         guard.setFeed(address(t2), address(df), 26 hours);
         df.setAnsweredInRound(type(uint256).max);
 
-        assertTrue(_survives(address(guard), abi.encodeWithSelector(ShareExactGuard.state.selector, address(t2))), "state");
+        assertTrue(
+            _survives(address(guard), abi.encodeWithSelector(ShareExactGuard.state.selector, address(t2))),
+            "state"
+        );
         assertEq(uint256(guard.state(address(t2))), uint256(DataState.FRESH));
     }
 
@@ -216,9 +241,10 @@ contract HardeningTest is Test {
 
     function test_quoteDoesNotRevertOnAnOverflowingRequest() public {
         MockStockToken small = new MockStockToken("Small", "SML", 1); // multiplier 1 wei
-        (bool ok, bytes memory ret) = address(exact).staticcall(
-            abi.encodeWithSelector(ExactTransfer.quote.selector, address(small), type(uint256).max)
-        );
+        (bool ok, bytes memory ret) = address(exact)
+            .staticcall(
+                abi.encodeWithSelector(ExactTransfer.quote.selector, address(small), type(uint256).max)
+            );
         assertTrue(ok, "quote reverted on overflow despite never-reverts");
         (,,,, bool executable) = abi.decode(ret, (uint256, uint256, uint256, DataState, bool));
         assertFalse(executable);
