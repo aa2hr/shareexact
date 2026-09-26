@@ -112,11 +112,14 @@ What the owner **can** do, inside those bounds:
 
 Widening the live 7200s window, up to 7 days, is one lever. Narrowing it to
 10 minutes is another. Neither is "the owner cannot block you". A sequencer
-feed that reports down blocks transfers with no corporate action pending. The
-owner today is still the deployer EOA `0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408`.
-`pendingOwner` is the timelock `0x1586de8B6eEBf195faC0f8604825dD331aA74d41`.
-It cannot accept before 2026-09-26 19:08:35 UTC. Until `acceptOwnership` lands,
-the EOA can still change feeds and the window.
+feed that reports down blocks transfers with no corporate action pending.
+Since [`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1)
+(2026-09-26 20:18:21 UTC) the owner is the timelock
+`0x1586de8B6eEBf195faC0f8604825dD331aA74d41` and `pendingOwner` is zero.
+The deployer EOA can no longer change a feed or the window in the same block.
+The proposer is the 2-of-3 Safe `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`.
+Every `setFeed`, `setCorpActionWindow` and `setSequencerFeed` waits the 24h
+`minDelay`. Execution after the delay is open.
 
 Ownership is two-step (`transferOwnership` / `acceptOwnership`).
 
@@ -211,11 +214,13 @@ states, not a recommendation for your liquidation path.
 
 | | |
 | --- | --- |
-| Guard owner | deployer EOA `0x9D2A…9408`. Timelock is `pendingOwner`, not accepted |
+| Guard owner | timelock `0x1586…A74d`, accepted in `0x40be6a34…229cd1`. Proposer is Safe `0x588B…f3aC`. Delay 24h |
 | Upgradeability | none |
 | Tests | 87 Foundry, 0 failed, including the adversarial and hardening suites |
 | Audit | none. Reviewed twice externally; both rounds are in `docs/SECURITY.md` |
 
-The owner key is the thing to weigh. Until the timelock accepts, the answer is
-still an EOA. Weigh it accordingly, or take the `multiplierOf` path above,
-which does not depend on it.
+The owner key is no longer an EOA. A change still lands, but only after the
+Safe schedules it and 24 hours pass. The window can still move between 10
+minutes and 7 days. The owner still cannot set `effectiveAt` or the multiplier.
+If that delay is not enough, use the `multiplierOf` path above. It does not
+depend on the owner.

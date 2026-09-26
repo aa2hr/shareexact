@@ -180,12 +180,16 @@ Found by a fourth review round:
 
 Known and not fixed:
 
-- Guard configuration is still the deploying EOA, as of 26 Sep 2026.
-  A 2-of-3 Safe is the timelock proposer. `acceptOwnership` is scheduled and
-  has not been executed, so the EOA can still change a feed or the window in
-  the same block. The window can no longer be set to zero. It can still be
-  moved anywhere from 10 minutes to 7 days. The owner cannot set `effectiveAt`
-  or the multiplier. Both are read from the token.
+- Guard configuration is the timelock `0x1586de8B6eEBf195faC0f8604825dD331aA74d41`,
+  accepted 26 Sep 2026 in `0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1`.
+  `pendingOwner` is zero. The proposer is the 2-of-3 Safe
+  `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`. The deployer EOA is not a
+  proposer and can no longer change a feed or the window in the same block.
+  Every such change waits 24 hours. The window still cannot be set to zero,
+  and it can still be moved from 10 minutes to 7 days once the delay has
+  passed. The owner cannot set `effectiveAt` or the multiplier. Both are read
+  from the token. If every Safe key is lost, configuration freezes. There is
+  no proxy and no escape hatch.
 - A hostile token can change its own multiplier inside `transferFrom`. Pinned by
   `test_multiplierMutationDuringTransferSettlesAtQuotedRatio`, which shows the
   transfer settles at the quoted ratio and the contract retains no balance. Out

@@ -13,8 +13,10 @@ current ExactTransfer `0x032f454686d19a4753e4fBE955f5E52e86DEA346`.
 `ExactTransfer` calls `unitChangeImminent` instead of reading the unit off
 `state()`. The window cannot be set below 10 minutes. A dirty `uint80` does
 not revert observation. Addresses in `deployments/chain-4663.json`. Eight
-Chainlink feeds are registered on this guard. The owner is still the deploying
-EOA. A timelock is `pendingOwner` and has not accepted. Runbook: `docs/DEPLOY.md`
+Chainlink feeds are registered on this guard. The owner is the timelock
+`0x1586de8B6eEBf195faC0f8604825dD331aA74d41`, accepted in
+[`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1).
+`pendingOwner` is zero. Runbook: `docs/DEPLOY.md`
 **Proof of this deployment:** the deploy transactions in the record. No
 `ExactShareTransfer` has been sent to `0x032f…A346` yet.
 

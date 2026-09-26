@@ -61,9 +61,12 @@ Both contracts are on Robinhood Chain mainnet, 4663, redeployed 25 Sep 2026.
 `state()`, so a stale or paused feed no longer hides a scheduled multiplier
 change. The corporate-action window cannot be set below 10 minutes. Round words
 are loaded directly, so a dirty `uint80` does not revert `state()`. The eight
-feeds were registered on this guard. The owner is still the deploying EOA.
-`pendingOwner` is a timelock and has not accepted. That acceptance is not done
-until `owner()` is the timelock and `pendingOwner` is zero.
+feeds were registered on this guard. The owner is the timelock
+`0x1586de8B6eEBf195faC0f8604825dD331aA74d41`. `pendingOwner` is zero.
+Acceptance landed in [`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1)
+at 2026-09-26 20:18:21 UTC, block 73363250. A feed or window change now waits
+the 24h delay and has to be scheduled by the Safe
+`0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`.
 
 The 20 Sep proof, [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03),
 moved shares through the retired ExactTransfer `0x507b…68ab`. No

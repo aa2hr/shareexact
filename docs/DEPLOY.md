@@ -128,8 +128,14 @@ never be true before the click works.
 
 ### Ownership
 
-For the hackathon the deploying EOA as owner is defensible and the verifier
-prints a note when it sees one. Before anyone lends against this, move it:
+On Robinhood Chain mainnet this move is already done. `owner()` is the timelock
+`0x1586de8B6eEBf195faC0f8604825dD331aA74d41` as of
+[`0x40be6a34…229cd1`](https://robinhoodchain.blockscout.com/tx/0x40be6a3424371ee120bc8e291c905a2c1d956f2653e9bac45b293567df229cd1)
+(2026-09-26 20:18:21 UTC, block 73363250). `pendingOwner` is zero. The proposer
+is the Safe `0x588BbB3A33E61F081CFa2423FF507682450Ef3aC`.
+
+For a later deployment the verifier prints a note while the owner is still the
+deploying EOA. Before anyone lends against that deployment, move it:
 
 ```bash
 cast send <GUARD> "transferOwnership(address)" <MULTISIG> --private-key $PRIVATE_KEY
