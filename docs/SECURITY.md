@@ -42,12 +42,12 @@ transfer quoted across a scheduled change reverts even if the feed is stale.
 An earlier version of this README claimed view functions never revert. That was
 an overclaim and has been narrowed:
 
-- **Observation does not revert on a failed call, short data, or a dirty boolean.**
-  It does revert when `latestRoundData()` returns 160 bytes and a `uint80`
-  field does not fit. That takes `state()`, `priceOf()`, `usdValue()`, and
-  `ExactTransfer.quote()` with it. `multiplierOf()` never reads a round, so a
-  dirty word there does not revert. This decode is still in the deployed guard.
-  See `docs/INTEGRATING.md`.
+- **Observation does not revert on a failed call, short data, a dirty boolean, or a dirty `uint80`.**
+  `state()`, `priceOf()` and `usdValue()` load the round words directly and never
+  read `roundId` or `answeredInRound`, so a dirty `uint80` in those fields does
+  not revert them. `multiplierOf()` does not read a round. The retired guard at
+  `0x290558…db37` still `abi.decode`d the tuple and could revert. This deployed
+  guard does not. See `docs/INTEGRATING.md`.
 - **Conversion fails closed.** `sharesToRaw()` and `rawToShares()` revert when
   the multiplier cannot be read, because returning a wrong unit moves a wrong
   amount of money. `usdValue()` is not in that list: a Chainlink feed prices one
@@ -180,9 +180,12 @@ Found by a fourth review round:
 
 Known and not fixed:
 
-- Guard configuration is single-owner. Two-step transfer and events are in
-  place; multisig and timelock are prerequisites for any lending integration and
-  are not claimed to exist.
+- Guard configuration is still the deploying EOA, as of 26 Sep 2026.
+  A 2-of-3 Safe is the timelock proposer. `acceptOwnership` is scheduled and
+  has not been executed, so the EOA can still change a feed or the window in
+  the same block. The window can no longer be set to zero. It can still be
+  moved anywhere from 10 minutes to 7 days. The owner cannot set `effectiveAt`
+  or the multiplier. Both are read from the token.
 - A hostile token can change its own multiplier inside `transferFrom`. Pinned by
   `test_multiplierMutationDuringTransferSettlesAtQuotedRatio`, which shows the
   transfer settles at the quoted ratio and the contract retains no balance. Out

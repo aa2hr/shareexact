@@ -6,9 +6,10 @@ slither src \
   --exclude-informational --exclude-low
 ```
 
-Run against `contracts/src` with solc 0.8.24. Also wired into CI
-(`.github/workflows/ci.yml`, job `analysis`) so it re-runs on every push rather
-than being a screenshot in a document.
+Run against `contracts/src` with solc 0.8.24. The command below is the manual
+run this report describes. The CI job named `analysis` does not check out the
+OpenZeppelin submodule and discards Slither's exit code, so a green analysis
+check is not a re-run of this report.
 
 ## Result
 
