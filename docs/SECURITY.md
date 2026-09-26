@@ -8,7 +8,7 @@ to look at.
 
 | Actor | Power | Bound |
 | --- | --- | --- |
-| Guard owner | Registers feeds, sets staleness bounds and the sequencer feed | **This is the main trust assumption.** An owner who registers a wrong feed can make a bad price read FRESH. All configuration emits events; ownership transfer is two-step. For anything beyond a demo this key must be a multisig behind a timelock |
+| Guard owner | Registers feeds, sets staleness bounds and the sequencer feed | **This is the main trust assumption.** An owner who registers a wrong feed can make a bad price read FRESH. All configuration emits events; ownership transfer is two-step. On 4663 this key is a `TimelockController` with a 24h delay whose only proposer is a 2-of-3 Safe. The addresses are in the owner note under Known and not fixed |
 | Token issuer | Controls `uiMultiplier` and `oraclePaused` on the Stock Token | Out of scope. If the issuer lies about the ratio, nothing downstream can detect it |
 | Chainlink | Supplies price and sequencer uptime | Feed correctness is assumed; freshness is not — that is the entire point of the guard |
 | `ExactTransfer` | None | Holds no balance, has no admin function, cannot be upgraded. Spends an existing allowance inside the transfer and retains nothing afterwards |

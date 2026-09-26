@@ -81,7 +81,7 @@ timelock ownership. It does not check a share transfer.
 None of that has to be taken on trust:
 
 ```bash
-npm run deploy:verify    # 16 checks against live chain state
+npm run deploy:verify    # 20 checks against live chain state
 npm run feeds:parity     # does the desk agree with the guard about every feed
 ```
 

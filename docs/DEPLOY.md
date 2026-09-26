@@ -308,6 +308,9 @@ is downstream of that minute going well.
 
 ## Done when
 
+This is the checklist for a fresh deployment. Chain 4663 satisfies all of it;
+`npm run deploy:verify` is the machine-checkable half.
+
 - [ ] `npm run deploy:verify` exits zero against chain 4663
 - [ ] Both explorer source tabs show verified contracts
 - [ ] `"verified": true` in `deployments/chain-4663.json`, set after checking
