@@ -19,12 +19,12 @@ import {DataState, IShareExactGuard} from "./interfaces/IShareExactGuard.sol";
 ///      2. **Observation never reverts; conversion fails closed.** `state()` and
 ///         `priceOf()` swallow failures from third-party tokens and feeds and
 ///         degrade to an explicit state, because a risk layer that reverts when
-///         the market closes is useless precisely when you need it. The
-///         conversion and valuation functions do the opposite on purpose: if the
-///         multiplier cannot be read, `sharesToRaw`, `rawToShares` and
-///         `usdValue` revert rather than guess, because a wrong unit moves the
-///         wrong amount of money. `requireFresh()` and `usdValue(..., false)`
-///         are the strict price variants.
+///         the market closes is useless precisely when you need it. If the
+///         multiplier cannot be read, `sharesToRaw` and `rawToShares` revert
+///         rather than guess, because a wrong unit moves the wrong amount of
+///         money. `usdValue` does not read the multiplier: the feed already
+///         prices one raw token. `requireFresh()` and `usdValue(..., false)`
+///         revert unless the price state is `FRESH`.
 ///
 ///      3. **Staleness is the primary guard.** Robinhood documents
 ///         `oraclePaused()` as advisory and not enforced on-chain, so it is

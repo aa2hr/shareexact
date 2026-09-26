@@ -4,7 +4,7 @@ For protocol engineers deciding whether to put this contract in front of a
 risk-sensitive path. It answers the questions an auditor asks before adding an
 external dependency, including the ones where the answer is unflattering.
 
-Guard: [`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`](https://robinhoodchain.blockscout.com/address/0x290558b05dec593af7b2ef6dbc26b9ffc38adb37) · chain 4663
+Guard: [`0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5`](https://robinhoodchain.blockscout.com/address/0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5) · chain 4663 · deployed 25 Sep 2026. The 20 Sep guard `0x290558…db37` is retired.
 
 ---
 
@@ -60,25 +60,25 @@ them is `STALE`. `requireFresh()` would stop your lending every weekend.
 
 ## Availability
 
-**`state()` reverts on one malformed feed shape.** A failed `staticcall`, short
+**`state()` does not revert on a dirty round.** A failed `staticcall`, short
 return data, and a dirty boolean are swallowed. `_tryBool` reads the word
 directly because `abi.decode(_, (bool))` reverts on anything other than 0 or 1.
-`_tryLatestRoundData` does not do that for the two `uint80` fields in
-`latestRoundData()`. A 160-byte payload whose `roundId` or `answeredInRound`
-does not fit in `uint80` makes `abi.decode` revert, and `state()`, `priceOf()`,
-and `usdValue()` revert with it. A canonical Chainlink round does not look like
-that. An earlier revision of this file said `state()` cannot revert, and cited
-`_tryBool` as the reason. That was wrong: the live guard still decodes the
-round that way. `_tryUint` is a different case. A `uint256` word has no range
-check, so `multiplierOf` does not revert on a dirty word.
+`_tryLatestRoundData` does the same for the two `uint80` fields: it loads
+`answer` and `updatedAt` with `mload` and never range-checks `roundId` or
+`answeredInRound`. A 160-byte payload whose round ids do not fit does not
+revert `state()`, `priceOf()`, or `usdValue()`. The retired guard did, and an
+earlier revision of this file said the live one still did. That revision is
+wrong for `0xa104…9da5`. `_tryUint` is unchanged. A `uint256` word has no range
+check, so `multiplierOf` does not revert on a dirty word either.
 
 The sequencer subtraction is guarded against underflow. The adversarial suite
-covers dirty booleans, short return data, reverting feeds, and future
-timestamps. It does not cover a dirty `uint80`.
+covers dirty booleans, short return data, reverting feeds, future timestamps,
+and a dirty `uint80`.
 
 **No upgrade path.** No proxy, no `delegatecall`, no initializer. Both contracts
-are immutable; `ExactTransfer.guard` is an `immutable` field. Fixing the decode
-means a new guard, and a new `ExactTransfer` if you want transfers to follow it.
+are immutable; `ExactTransfer.guard` is an `immutable` field. The decode fix
+shipped as this guard and as `ExactTransfer`
+`0x032f454686d19a4753e4fBE955f5E52e86DEA346`, which points at it.
 
 **No custody.** The guard holds no tokens and has no function that can move
 them. The worst case for an integrator is a wrong answer, never a stolen
@@ -87,7 +87,8 @@ balance.
 **The owner surface, stated precisely.** The owner can call `setFeed`,
 `removeFeed`, `setSequencerFeed` and `setCorpActionWindow`. Bounds are enforced
 in the contract: `MIN_STALENESS` 60s, `MAX_STALENESS` 7 days,
-`MAX_CORP_ACTION_WINDOW` 7 days, `MAX_SEQUENCER_GRACE` 1 day.
+`MIN_CORP_ACTION_WINDOW` 10 minutes, `MAX_CORP_ACTION_WINDOW` 7 days,
+`MAX_SEQUENCER_GRACE` 1 day.
 
 What the owner **cannot** do: the multiplier and `effectiveAt` are read from the
 token, never from owner-controlled storage, so the owner cannot forge a
@@ -96,22 +97,26 @@ zero or already past.
 
 What the owner **can** do, inside those bounds:
 
-- Set `corpActionWindow` to `0`. There is no minimum. A readable pending change
-  then stops reporting `CORP_ACTION`. An unreadable `newUIMultiplier()` still
-  fails closed, and that path ignores the window.
+- Narrow `corpActionWindow` down to 10 minutes, not to zero. Zero reverts
+  `WindowOutOfRange`. Ten minutes still shortens how early a readable pending
+  change reports as imminent. An unreadable `newUIMultiplier()` ignores the
+  window and fails closed on any future `effectiveAt`.
 - Point `setSequencerFeed` at a contract that answers `0` or `1` at
   configuration time and answers `1` later. The check does not stick.
   `state()` then returns `SEQUENCER_DOWN`, and `ExactTransfer` reverts
-  `SequencerDown` for every token. On 24 Sep 2026 the live `sequencerFeed` was
+  `SequencerDown` for every token. On 26 Sep 2026 the live `sequencerFeed` was
   unset, so this lever was not armed. It is still a lever.
 - Replace a registered price feed with another contract that passed
   `decimals()` and `latestRoundData()` once. `ExactTransfer` does not read the
   price. `usdValue` does.
 
-Widening the live 7200s window, up to 7 days, is one lever. It is not the only
-one, and it is not "the owner cannot block you". A sequencer feed that reports
-down blocks transfers with no corporate action pending. The owner is still the
-deployer EOA.
+Widening the live 7200s window, up to 7 days, is one lever. Narrowing it to
+10 minutes is another. Neither is "the owner cannot block you". A sequencer
+feed that reports down blocks transfers with no corporate action pending. The
+owner today is still the deployer EOA `0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408`.
+`pendingOwner` is the timelock `0x1586de8B6eEBf195faC0f8604825dD331aA74d41`.
+It cannot accept before 2026-09-26 19:08:35 UTC. Until `acceptOwnership` lands,
+the EOA can still change feeds and the window.
 
 Ownership is two-step (`transferOwnership` / `acceptOwnership`).
 
@@ -131,9 +136,9 @@ not a policy dependency.
 
 One caveat on that path, stated plainly: when `newUIMultiplier()` cannot be
 read, `multiplierOf` returns `pending == current`. A caller comparing
-`pending != current` sees "no change", whereas `state()` fails closed and
-reports `CORP_ACTION` in the same situation. The do-it-yourself path is slightly
-less conservative than the built-in one.
+`pending != current` sees "no change". `unitChangeImminent` and `state()` fail
+closed in that same situation and ignore the window. The do-it-yourself path is
+slightly less conservative than the built-in one.
 
 ## Put this in front of debt creation only
 
@@ -141,19 +146,25 @@ Refusing **new debt** while the unit is ambiguous is unconditionally
 conservative: the worst case is a borrow that waits.
 
 ```solidity
-import {DataState, IShareExactGuard} from "shareexact/interfaces/IShareExactGuard.sol";
+import {IShareExactGuard} from "shareexact/interfaces/IShareExactGuard.sol";
 
 IShareExactGuard constant GUARD =
-    IShareExactGuard(0x290558b05dec593af7b2ef6dbc26b9ffc38adb37);
+    IShareExactGuard(0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5);
 
 error UnitChangePending(address collateral);
 
-// borrow()
-DataState s = GUARD.state(collateral);
-if (s == DataState.CORP_ACTION || s == DataState.ORACLE_PAUSED) {
-    revert UnitChangePending(collateral);
-}
+// borrow(). Ask the unit question. Do not read it off state().
+// STALE and ORACLE_PAUSED outrank CORP_ACTION inside that enum, so a
+// pending multiplier change disappears from it whenever the price is also
+// unhealthy. unitChangeImminent does not read the feed registry.
+(bool unitMoving,) = GUARD.unitChangeImminent(collateral);
+if (unitMoving) revert UnitChangePending(collateral);
 ```
+
+`unitChangeImminent` does not report `ORACLE_PAUSED`. That flag is a price
+signal with no duration bound. If you also want to refuse new debt while the
+issuer says the oracle is paused, check `state()` for `ORACLE_PAUSED` as a
+second condition. Do not use that check as a substitute for the unit call.
 
 **Do not put this gate on `liquidate()`.** Refusing liquidation is a different
 risk: it can stop you from closing positions that are genuinely unhealthy, and
@@ -178,18 +189,20 @@ states, not a recommendation for your liquidation path.
   `effectiveAt` is not visible in advance. This is a circuit breaker for
   *scheduled* transitions, not a general solution to share-unit/oracle
   atomicity.
-- **A stale registered feed masks a pending change.** For a token with a feed
-  registered here, `STALE` outranks `CORP_ACTION`. A token with no feed
-  registered reports `CORP_ACTION` directly. `state()` is single-valued, so
-  something has to lose. If you care about the unit specifically, either treat
-  any non-`FRESH` state as "do not act", or use `multiplierOf` above.
-- **Production history.** Robinhood's corporate-actions list shows a completed
-  GOOGL cash dividend with process date 14 Sep — before this guard's 20 Sep
-  deployment record. Nothing in that list is marked completed since. Later
-  entries, including NVDA on 1 Oct, are still in progress. So the scheduled
-  path has not been observed against a live event: these invariants have run
-  against mocks and a fuzzer, not against a real split or dividend. Nothing
-  here has been earned by surviving one.
+- **`state()` still masks a pending change.** For a token with a feed
+  registered here, `STALE` outranks `CORP_ACTION`, and `ORACLE_PAUSED` does
+  too. `ExactTransfer` does not use that path. It calls `unitChangeImminent`,
+  which is why a stale feed no longer lets a transfer through a scheduled
+  split. A caller who only branches on `state() == CORP_ACTION` still misses
+  it. Use the snippet above, or `multiplierOf` if you will not depend on the
+  window.
+- **Production history.** This guard was deployed 25 Sep 2026. Robinhood's
+  corporate-actions list shows a completed GOOGL cash dividend with process
+  date 14 Sep, before either this guard or the retired 20 Sep one. Nothing in
+  that list is marked completed since. Later entries, including NVDA on 1 Oct,
+  are still in progress. The scheduled path has not been observed against a
+  live event. These invariants have run against mocks and a fuzzer, not against
+  a real split or dividend.
 - **Hostile tokens.** The guard's staticcalls forward all remaining gas. A
   malicious token could grief a caller. Not a concern for canonical Stock
   Tokens; relevant if you ever point this at an arbitrary ERC-20.
@@ -198,11 +211,11 @@ states, not a recommendation for your liquidation path.
 
 | | |
 | --- | --- |
-| Guard owner | deployer EOA — **not yet a multisig** |
+| Guard owner | deployer EOA `0x9D2A…9408`. Timelock is `pendingOwner`, not accepted |
 | Upgradeability | none |
-| Tests | 65 Foundry, including an adversarial suite |
+| Tests | 87 Foundry, 0 failed, including the adversarial and hardening suites |
 | Audit | none. Reviewed twice externally; both rounds are in `docs/SECURITY.md` |
 
-The owner key is the thing to weigh. Ask where it stands before you merge, not
-after — and if the answer is still "an EOA" when you read this, weigh it
-accordingly or take the `multiplierOf` path above, which does not depend on it.
+The owner key is the thing to weigh. Until the timelock accepts, the answer is
+still an EOA. Weigh it accordingly, or take the `multiplierOf` path above,
+which does not depend on it.

@@ -7,16 +7,16 @@
 **Pitch:** [https://youtu.be/mlt8fNUDXaQ](https://youtu.be/mlt8fNUDXaQ) (2:06)
 **Technical demo:** [https://youtu.be/TwiEW0ngcT0](https://youtu.be/TwiEW0ngcT0) (2:50)
 **Live:** **[shareexact.com](https://shareexact.com)** — the desk, reading chain 4663 and signing transfers today
-**Contracts:** written, tested (65 Foundry tests, including the 4
-`CorpActionCoverage` regression tests added 20 Sep), Slither-clean. Redeployed
-20 Sep 2026 after an external review found the guard could settle a transfer
-across a pending corporate action on any token without a registered price feed
-— see "Corporate-action fix" below. Addresses in `deployments/chain-4663.json`,
-written by `npm run deploy:record` and checked against the live chain by
-`npm run deploy:verify` (16/16). Eight Chainlink feeds re-registered on the new
-guard. Both contracts are verified on Blockscout. Runbook: `docs/DEPLOY.md`
-**Proof:** share-denominated transfer executed on the redeployed ExactTransfer —
-[`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03)
+**Contracts:** written, tested (87 Foundry tests, 0 failed). Redeployed
+25 Sep 2026. Current guard `0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5`,
+current ExactTransfer `0x032f454686d19a4753e4fBE955f5E52e86DEA346`.
+`ExactTransfer` calls `unitChangeImminent` instead of reading the unit off
+`state()`. The window cannot be set below 10 minutes. A dirty `uint80` does
+not revert observation. Addresses in `deployments/chain-4663.json`. Eight
+Chainlink feeds are registered on this guard. The owner is still the deploying
+EOA. A timelock is `pendingOwner` and has not accepted. Runbook: `docs/DEPLOY.md`
+**Proof of this deployment:** the deploy transactions in the record. No
+`ExactShareTransfer` has been sent to `0x032f…A346` yet.
 
 Prior deployment's proof transactions (retired guard `0x2dd1d4c1…`, replaced 20 Sep 2026 for the fix below):
 [`0x7a6daf6d…1ada29`](https://robinhoodchain.blockscout.com/tx/0x7a6daf6d88386096d3b1d63bb46903782a78669200f24378098cfdb9be1ada29),
@@ -27,19 +27,31 @@ Earlier direct-route send (before any guard was live):
 
 ---
 
-## Corporate-action fix (20 Sep 2026)
+## Corporate-action fix (20 Sep 2026, retired)
 
 An external review found `ShareExactGuard._evaluate()` returned `NO_FEED` and
 stopped before ever checking for a pending corporate action, so
-`ExactTransfer` — which blocks only on `CORP_ACTION` and `SEQUENCER_DOWN` —
-settled straight across a pending split or dividend on any of the 186 Stock
-Tokens with no registered price feed. Fixed in commit `4123646` (contract) and
-`bad3bae` (SDK/app classifier parity), covered by four new regression tests in
+`ExactTransfer` — which at that time blocked only on `CORP_ACTION` and
+`SEQUENCER_DOWN` — settled straight across a pending split or dividend on any
+Stock Token with no registered price feed. Fixed in commit `4123646` (contract)
+and `bad3bae` (SDK/app classifier parity), covered by four regression tests in
 `contracts/test/CorpActionCoverage.t.sol`. Because `ExactTransfer.guard` is
-immutable, shipping this required a full redeploy: new `ShareExactGuard` at
-`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`, new `ExactTransfer` at
-`0x507b0d8e8558e899af3b511b083f73dfe17168ab`, all eight feeds re-registered,
-proof transaction above.
+immutable, shipping this required a full redeploy: guard
+`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`, ExactTransfer
+`0x507b0d8e8558e899af3b511b083f73dfe17168ab`. Those two addresses are retired.
+The share transfer on that helper is
+[`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03).
+
+## Unit check (25 Sep 2026, current)
+
+`STALE` and `ORACLE_PAUSED` still outrank `CORP_ACTION` inside `state()`, so
+reading the unit off the enum let a transfer through a scheduled change
+whenever the feed was stale or paused. `ExactTransfer` now calls
+`unitChangeImminent`, which reads the token and not the feed registry. The
+window has a floor of 10 minutes. Observation loads round words directly.
+Covered by `contracts/test/Hardening.t.sol`. Deployed in block 72442933 by
+`0x9D2A73430A5D4D8D6Bc1bDb1d376576f57CC9408`. No share has moved through this
+ExactTransfer.
 
 ## The problem, with a number
 
@@ -94,7 +106,7 @@ Follow `docs/DEMO.md` exactly. The desk opens on Transfer by design.
 3. Sign. Open the Blockscout link.
 4. Show staleness: either the live banner on a weekend, or
    `test_staleAfterWeekend`.
-5. `forge test` — 65 tests, including `ExampleCollateralPool`: a third-party
+5. `forge test` — 87 tests, including `ExampleCollateralPool`: a third-party
    lending pool that refuses to liquidate on a weekend mark.
 6. Only then, the risk view, labelled as simulation.
 

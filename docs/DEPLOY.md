@@ -53,7 +53,7 @@ repository is built to prevent.
 cd contracts
 forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts@v5.1.0
 forge build
-forge test -vv            # 65 tests must be green before anything leaves your machine
+forge test -vv            # 87 tests must be green before anything leaves your machine
 
 export PRIVATE_KEY=0x...
 export GUARD_OWNER=$(cast wallet address --private-key $PRIVATE_KEY)

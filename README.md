@@ -47,22 +47,29 @@ and a desk that refuses to show a number it cannot source.
 | | |
 | --- | --- |
 | Desk | **[shareexact.com](https://shareexact.com)** |
-| ShareExactGuard | [`0x290558b05dec593af7b2ef6dbc26b9ffc38adb37`](https://robinhoodchain.blockscout.com/address/0x290558b05dec593af7b2ef6dbc26b9ffc38adb37) |
-| ExactTransfer | [`0x507b0d8e8558e899af3b511b083f73dfe17168ab`](https://robinhoodchain.blockscout.com/address/0x507b0d8e8558e899af3b511b083f73dfe17168ab) |
-| Proof transaction | [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03) |
+| ShareExactGuard | [`0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5`](https://robinhoodchain.blockscout.com/address/0xa1042D6bE795d475E5ffe7A333d04e364CBf9da5) |
+| ExactTransfer | [`0x032f454686d19a4753e4fBE955f5E52e86DEA346`](https://robinhoodchain.blockscout.com/address/0x032f454686d19a4753e4fBE955f5E52e86DEA346) |
+| Deployed | 25 Sep 2026, 18:30 UTC, block 72442933, by `0x9D2A…9408` |
+| Share-transfer proof | none on this ExactTransfer. The 20 Sep proof below hit the retired helper |
 | Video demo tx | [`0x1e8e80f3…9569f3`](https://robinhoodchain.blockscout.com/tx/0x1e8e80f32b847899f02d2c1ac4fdf2eee44bb28583a4372fd00eb23c499569f3) |
 | Record | [`deployments/chain-4663.json`](deployments/chain-4663.json) |
 | Chain | Robinhood Chain mainnet, 4663 |
 | Feeds | 8 Chainlink feeds registered on the guard, each verified against `description()`: AAPL GOOGL INTC MSFT NVDA SLV SPY TSLA |
 
-Both contracts are on Robinhood Chain mainnet, 4663, redeployed 20 Sep 2026
-so the corporate-action check runs even on tokens without a price feed. The
-eight Chainlink feeds were re-registered on the new guard: AAPL GOOGL INTC
-MSFT NVDA SLV SPY TSLA. Record: [`deployments/chain-4663.json`](deployments/chain-4663.json).
+Both contracts are on Robinhood Chain mainnet, 4663, redeployed 25 Sep 2026.
+`ExactTransfer` asks `unitChangeImminent` rather than inferring the unit from
+`state()`, so a stale or paused feed no longer hides a scheduled multiplier
+change. The corporate-action window cannot be set below 10 minutes. Round words
+are loaded directly, so a dirty `uint80` does not revert `state()`. The eight
+feeds were registered on this guard. The owner is still the deploying EOA.
+`pendingOwner` is a timelock and has not accepted. That acceptance is not done
+until `owner()` is the timelock and `pendingOwner` is zero.
 
-The proof transaction moved shares through the new ExactTransfer. Both
-contracts are verified on Blockscout. The bytecode and the eight feeds are
-what `npm run deploy:verify` checks.
+The 20 Sep proof, [`0x3790392a…68e6b03`](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03),
+moved shares through the retired ExactTransfer `0x507b…68ab`. No
+`ExactShareTransfer` has been sent to `0x032f…A346`. Do not cite the older hash
+as proof of this deployment. `npm run deploy:verify` checks the bytecode's
+wiring and the eight feeds. It does not check a share transfer.
 
 None of that has to be taken on trust:
 
@@ -74,7 +81,7 @@ npm run feeds:parity     # does the desk agree with the guard about every feed
 ## What is in here
 
 ```
-contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 65 tests
+contracts/     Foundry project — ShareExactGuard + ExactTransfer + example integration, 87 tests
 sdk/           @shareexact/sdk — zero-dependency reader for other protocols
 deployments/   Live 4663 record: Guard, ExactTransfer, 8 feeds, proof tx. See deployments/README.md
 src/lib/       Oracle reads, ABI codec, data-state classifier, money path
@@ -98,15 +105,13 @@ all this contract claims to know. Session labelling lives off-chain.
 
 Design constraints it holds to:
 
-- **Conversion fails closed. Observation has one hole.** A failed call, short
-  return data, and a dirty boolean do not revert `state()` or `priceOf()`. A
-  160-byte `latestRoundData()` whose `uint80` round ids do not fit still does.
-  A canonical Chainlink round does not look like that. The live guard still
-  decodes it. See `docs/INTEGRATING.md`. If the multiplier cannot be read,
-  `sharesToRaw`, `rawToShares` and a transfer all revert rather than guess
-  (`usdValue` does not, because a feed prices one raw token and never needs the
-  multiplier) — an unreadable ratio is not evidence of a 1:1 token, and guessing
-  wrong moves the wrong amount of money. See `docs/SECURITY.md`.
+- **Conversion fails closed. Observation does not revert on a bad round.** A
+  failed call, short return data, a dirty boolean, and a `uint80` that does not
+  fit do not revert `state()` or `priceOf()`. The round words are loaded
+  directly. The retired guard decoded them and could revert. If the multiplier
+  cannot be read, `sharesToRaw`, `rawToShares` and a transfer all revert rather
+  than guess (`usdValue` does not, because a feed prices one raw token and
+  never needs the multiplier). See `docs/INTEGRATING.md` and `docs/SECURITY.md`.
 - Staleness outranks the advisory `oraclePaused()` flag, because Robinhood
   documents that flag as not enforced on-chain.
 - No custody, no upgradeability, no admin function that can move a token. The
@@ -121,9 +126,11 @@ and the caller states the shortfall it accepts, so truncation cannot pass
 unnoticed.
 
 One deliberate asymmetry, and it is the detail worth arguing about in a review:
-**a transfer does not need a fresh price, only an intact multiplier.** So a
-weekend (`STALE`) transfer is allowed, and a transfer quoted seconds before a
-split (`CORP_ACTION`) is not.
+**a transfer does not need a fresh price, only an intact multiplier.** A weekend
+(`STALE`) transfer is allowed. A scheduled multiplier change is not, and that
+question is `unitChangeImminent`, not `state() == CORP_ACTION`. `STALE` and
+`ORACLE_PAUSED` still outrank `CORP_ACTION` inside the enum. They no longer
+hide the change from `ExactTransfer`.
 
 ---
 
@@ -194,8 +201,9 @@ token registry from Robinhood's `/rhj/assets`, balances via batched `balanceOf`,
 from each token, Chainlink `latestRoundData()` for the eight registered feeds,
 sequencer uptime, and signed ERC-20 transfers computed from the live multiplier.
 
-Live exact send through ExactTransfer (20 Sep 2026, current deployment):
+Live exact send through the retired 20 Sep ExactTransfer `0x507b…68ab`:
 [0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03](https://robinhoodchain.blockscout.com/tx/0x3790392a8666788f867b0399e5557b77a5ad24764dce1ad9929a2701768e6b03).
+The current helper, deployed 25 Sep 2026, has not yet moved a share.
 
 Prior deployment (17 Sep 2026, retired), 0.002 UI shares →
 0.001998450882483378 raw at multiplier `1.000775159164630595`:

@@ -59,5 +59,5 @@ names to unused variables to silence it would make the code worse.
 Slither is a linter for contract idioms. It does not know that a stale price
 must not be liquidated on, that a multiplier read failure must fail closed, or
 that a feed timestamp in the future is hostile. Those are in
-`docs/SECURITY.md`, enforced by the 65 Foundry tests, and no static analyser
+`docs/SECURITY.md`, enforced by the 87 Foundry tests, and no static analyser
 would have found them.
