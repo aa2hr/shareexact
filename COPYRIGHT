@@ -1,0 +1,9 @@
+Copyright (c) 2026 aa2hr. All rights reserved.
+
+This repository is public so hackathon judges can read it.
+No license is granted to copy, modify, distribute, or reuse the code.
+
+Two interface files keep an MIT header because they restate standard
+interfaces the author does not own: contracts/src/interfaces/IERC20.sol
+and contracts/src/interfaces/AggregatorV3Interface.sol.
+OpenZeppelin and forge-std, under contracts/lib, keep their own licenses.

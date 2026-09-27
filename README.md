@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml/badge.svg)](https://github.com/aa2hr/shareexact/actions/workflows/ci.yml)
 
+Copyright (c) 2026 aa2hr. All rights reserved. Public so judges can read it. No right to copy or reuse is granted. See [COPYRIGHT](COPYRIGHT).
+
 ## Demo
 
 - **Pitch video (2:06):** https://youtu.be/mlt8fNUDXaQ

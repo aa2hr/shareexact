@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
 /// @notice Minimal stand-in for a Robinhood Stock Token: a normal ERC-20 with

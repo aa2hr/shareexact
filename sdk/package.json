@@ -2,7 +2,7 @@
   "name": "@shareexact/sdk",
   "version": "0.3.0",
   "description": "Read Robinhood Chain Stock Tokens correctly: exact share units, ERC-8056 multipliers, and honest price staleness.",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
