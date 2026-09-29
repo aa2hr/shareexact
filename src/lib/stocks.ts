@@ -33,7 +33,6 @@ export interface Stock {
   change1d: number;
   afterHours: number;
   about: string;
-  aboutFa: string;
   color: string;
   priceSource?: PriceSource;
   priceUpdatedAt?: number | null;
@@ -61,7 +60,6 @@ export const STOCKS: Stock[] = [
     change1d: 1.42,
     afterHours: 0.38,
     about: "AI accelerators. Highest-beta name in a typical infrastructure thesis.",
-    aboutFa: "شتاب‌دهنده هوش مصنوعی. پرریسک‌ترین نام در تز زیرساخت.",
     color: "#76b900",
   },
   {
@@ -74,7 +72,6 @@ export const STOCKS: Stock[] = [
     change1d: -0.31,
     afterHours: -0.08,
     about: "Services mix and buybacks. The ballast in most US-equity baskets.",
-    aboutFa: "خدمات و بازخرید سهام. وزنه تعادل اکثر سبدهای سهام آمریکا.",
     color: "#a2aaad",
   },
   {
@@ -87,7 +84,6 @@ export const STOCKS: Stock[] = [
     change1d: 0.54,
     afterHours: 0.12,
     about: "Azure + OpenAI distribution. The compounding core of an AI basket.",
-    aboutFa: "Azure و توزیع OpenAI. هسته مرکب سبد هوش مصنوعی.",
     color: "#00a4ef",
   },
   {
@@ -100,7 +96,6 @@ export const STOCKS: Stock[] = [
     change1d: 0.88,
     afterHours: 0.21,
     about: "Search cash engine funding Gemini and YouTube. Cheaper AI call than NVDA.",
-    aboutFa: "موتور نقدی جستجو برای Gemini و یوتیوب. کال ارزان‌تر هوش مصنوعی نسبت به NVDA.",
     color: "#fbbc04",
   },
   {
@@ -113,7 +108,6 @@ export const STOCKS: Stock[] = [
     change1d: -1.86,
     afterHours: -0.54,
     about: "Robotaxi narrative, weekend-gap risk. After-hours volume is the story.",
-    aboutFa: "روایت روباتاکسی و ریسک گپ آخر هفته. حجم after-hours خود داستان است.",
     color: "#cc0000",
   },
   {
@@ -126,7 +120,6 @@ export const STOCKS: Stock[] = [
     change1d: 0.41,
     afterHours: 0.09,
     about: "AWS + retail operating leverage. Quiet compounder in most theses.",
-    aboutFa: "AWS و اهرم عملیاتی خرده‌فروشی. مرکب‌کننده آرام در اکثر تزها.",
     color: "#ff9900",
   },
   {
@@ -139,7 +132,6 @@ export const STOCKS: Stock[] = [
     change1d: 1.05,
     afterHours: 0.27,
     about: "Ads recovery plus Llama. High free-cash-flow AI proxy.",
-    aboutFa: "بازیابی تبلیغات به‌علاوه Llama. نماینده هوش مصنوعی با جریان نقدی بالا.",
     color: "#0668e1",
   },
   {
@@ -152,7 +144,6 @@ export const STOCKS: Stock[] = [
     change1d: 2.14,
     afterHours: 0.61,
     about: "Custom AI ASICs for hyperscalers. The quieter NVDA complement.",
-    aboutFa: "ASIC سفارشی هوش مصنوعی برای هایپراسکیلرها. مکمل آرام‌تر NVDA.",
     color: "#e31937",
   },
   {
@@ -165,7 +156,6 @@ export const STOCKS: Stock[] = [
     change1d: -0.62,
     afterHours: -0.14,
     about: "4× UI multiplier. Sending a displayed “1” as raw units moves 4 shares.",
-    aboutFa: "ضریب نمایشی ۴×. ارسال «۱» به‌صورت raw یعنی ۴ سهم.",
     color: "#e01e24",
   },
   {
@@ -178,7 +168,6 @@ export const STOCKS: Stock[] = [
     change1d: 0.22,
     afterHours: 0.05,
     about: "Beta of the US tape. Use as the after-hours baseline, not a thesis.",
-    aboutFa: "بتای نوار آمریکا. مبنای after-hours است، نه یک تز.",
     color: "#2a5ada",
   },
   {
@@ -191,7 +180,6 @@ export const STOCKS: Stock[] = [
     change1d: 0.67,
     afterHours: 0.18,
     about: "Nasdaq-100. The after-hours tape is usually this, just louder.",
-    aboutFa: "نزدک ۱۰۰. نوار after-hours معمولاً همین است، فقط بلندتر.",
     color: "#6b2d8b",
   },
   {
@@ -204,7 +192,6 @@ export const STOCKS: Stock[] = [
     change1d: 2.88,
     afterHours: 0.92,
     about: "Gov + AIP. Weekend narrative stock — gaps on headlines, not prints.",
-    aboutFa: "دولت و AIP. سهام روایی آخر هفته — گپ از تیتر، نه از صورت‌های مالی.",
     color: "#000000",
   },
 ];
@@ -265,7 +252,6 @@ export function mergeLiveAssets(
       change1d: prev?.change1d ?? FALLBACK_MARKS[a.symbol]?.change1d ?? 0,
       afterHours: prev?.afterHours ?? FALLBACK_MARKS[a.symbol]?.afterHours ?? 0,
       about: prev?.about ?? `Robinhood Stock Token (${a.symbol}) on chain 4663.`,
-      aboutFa: prev?.aboutFa ?? `توکن سهام رابین‌هود (${a.symbol}) روی زنجیره ۴۶۶۳.`,
       color: prev?.color ?? "#8b9088",
     });
   }

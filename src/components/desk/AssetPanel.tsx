@@ -97,7 +97,7 @@ export function AssetPanel() {
         </dl>
 
         <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
-          {isRtl(lang) ? stock.aboutFa : stock.about}
+          {stock.about}
         </p>
 
         {Number(stock.multiplier) >= 2 && (

@@ -1,4 +1,4 @@
-import { COPY, isRtl } from "@/lib/copy";
+import { COPY } from "@/lib/copy";
 import { getMarketSession } from "@/lib/session";
 import { STOCKS } from "@/lib/stocks";
 import { useDesk } from "@/lib/store";
@@ -24,7 +24,7 @@ export function NightView() {
         </h2>
         <p className="text-sm text-muted-foreground">{session.nyDate}</p>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed">
-          {isRtl(lang) ? session.detailFa : session.detail}
+          {session.detail}
         </p>
       </div>
 

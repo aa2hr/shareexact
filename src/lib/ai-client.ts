@@ -1,5 +1,5 @@
 import { runAssetAnalysis, runDeskBrief, runThesisBasket } from "./ai";
-import { isRtl, type Lang } from "./copy";
+import { type Lang } from "./copy";
 import { buildLocalAsset, buildLocalBrief, buildLocalThesis } from "./desk-engine";
 import { getMarketSession } from "./session";
 import { displayedShares, getStock, portfolioTotals, positionDollars, type Holding } from "./stocks";
@@ -141,7 +141,7 @@ export async function fetchAsset(opts: {
         symbol: s.symbol,
         name: s.name,
         sector: s.sector,
-        about: isRtl(opts.lang) ? s.aboutFa : s.about,
+        about: s.about,
         price: s.price,
         change1d: s.change1d,
         afterHours: s.afterHours,

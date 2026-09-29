@@ -83,7 +83,7 @@ export function DeskBar({
 
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
           <Badge tone={session.isNightDesk ? "night" : "open"}>
-            {rtl ? session.labelFa : session.label}
+            {session.label}
           </Badge>
           <span className="font-mono text-[11px] text-muted-foreground">
             {session.nyTime} ET

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { COPY, isRtl } from "@/lib/copy";
+import { COPY } from "@/lib/copy";
 import { aaplSplitMarks, buildRiskSnapshot, SCENARIOS, stressRisk, type BookMarks } from "@/lib/risk";
 import { displayedShares, getStock, isDustBook } from "@/lib/stocks";
 import { useDesk } from "@/lib/store";
@@ -10,7 +10,6 @@ import { formatShares, formatUsd } from "@/lib/utils";
 export function RiskView() {
   const lang = useDesk((s) => s.lang);
   const t = COPY[lang];
-  const rtl = isRtl(lang);
   const holdings = useDesk((s) => s.holdings);
   const setView = useDesk((s) => s.setView);
   const loadSample = useDesk((s) => s.loadSample);
@@ -26,9 +25,9 @@ export function RiskView() {
   const stress = useMemo(
     () =>
       scenario
-        ? stressRisk(holdings, scenario.shocks, borrow, rtl ? scenario.labelFa : scenario.label, marks)
+        ? stressRisk(holdings, scenario.shocks, borrow, scenario.label, marks)
         : null,
-    [holdings, borrow, scenario, marks, rtl],
+    [holdings, borrow, scenario, marks],
   );
   const shown = stress ?? base;
   const bandTone = shown.band === "low" ? "open" : shown.band === "moderate" ? "night" : "down";
@@ -180,7 +179,7 @@ export function RiskView() {
                 variant={scenarioId === s.id ? "default" : "secondary"}
                 onClick={() => setScenarioId(s.id)}
               >
-                {rtl ? s.labelFa : s.label}
+                {s.label}
               </Button>
             ))}
           </div>
@@ -188,7 +187,7 @@ export function RiskView() {
         {stress ? (
           <>
             <div className="mt-6 grid gap-3 sm:grid-cols-4">
-              <Metric label={t.stressBook} value={rtl ? scenario?.labelFa ?? stress.scenario : stress.scenario} />
+              <Metric label={t.stressBook} value={scenario?.label ?? stress.scenario} />
               <Metric label={t.value} value={formatUsd(stress.shockedValue)} />
               <Metric label={t.drawdown} value={`${(stress.drawdown * 100).toFixed(1)}%`} />
               <Metric label={t.stance} value={actionLabel} />

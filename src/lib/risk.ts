@@ -84,19 +84,16 @@ export const SCENARIOS = [
   {
     id: "ai",
     label: "AI selloff",
-    labelFa: "فروش هوش مصنوعی",
     shocks: { NVDA: -0.22, AVGO: -0.2, MSFT: -0.12, CRWD: -0.28, PLTR: -0.3, GOOGL: -0.12, AAPL: -0.1, TSLA: -0.18, SPY: -0.08, QQQ: -0.12 },
   },
   {
     id: "riskoff",
     label: "Broad risk-off",
-    labelFa: "ریسک‌آف گسترده",
     shocks: { SPY: -0.1, QQQ: -0.13, NVDA: -0.2, AAPL: -0.08, MSFT: -0.1, TSLA: -0.2, CRWD: -0.18 },
   },
   {
     id: "weekend",
     label: "Weekend gap",
-    labelFa: "گپ آخر هفته",
     shocks: { TSLA: -0.24, PLTR: -0.3, CRWD: -0.16, NVDA: -0.11 },
   },
 ] as const;
