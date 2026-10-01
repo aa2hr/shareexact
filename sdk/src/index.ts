@@ -125,6 +125,35 @@ function normaliseFeedDecimals(value: number | undefined): number {
 }
 
 /**
+ * Every seconds argument is checked, because every way they can be wrong is
+ * silent.
+ *
+ * `maxStaleness: NaN` makes `now - updatedAt > NaN` false, so a feed that has
+ * not published in a week comes back `FRESH`. `corpActionWindow: NaN` makes
+ * `effectiveAt - now <= NaN` false, so a split scheduled for ten minutes from
+ * now is never reported. Neither throws, neither logs, and both turn this
+ * library into the thing it exists to prevent — a confident answer about a
+ * number nobody checked.
+ *
+ * `NaN` is not hypothetical: it is what `Number(undefined)`,
+ * `parseInt("")` and a missing field in a parsed config all produce, and each
+ * of those is one keystroke away in an integration.
+ *
+ * This throws rather than clamping. An out-of-range duration is a programming
+ * error in the caller, and the one thing worse than crashing on it is quietly
+ * substituting a value the caller did not choose and will never see.
+ */
+function requireSeconds(name: string, value: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${name} must be a finite number of seconds`);
+  }
+  if (value < 0) {
+    throw new Error(`${name} must not be negative`);
+  }
+  return value;
+}
+
+/**
  * The interface promises to accept "anything that can answer an eth_call", so a
  * caller-supplied function that throws is a legal input, not a bug. Wrapping it
  * here is what makes the never-throws claim on `readStockToken` actually true —
@@ -180,18 +209,24 @@ export function unitChangeImminent(input: Parameters<typeof classifyDataState>[0
  * Read everything about one Stock Token in five calls.
  *
  * Does not throw on a failed or throwing `CallFn`; every read degrades to null
- * and is reflected in `dataState`. It does throw on invalid arguments, which is
- * a programming error rather than a network condition.
+ * and is reflected in `dataState`. It does throw on invalid arguments —
+ * `feedDecimals`, `maxStaleness`, `corpActionWindow` and `now` are all checked
+ * before any call is made — because those are programming errors in the caller
+ * rather than network conditions, and a library that silently repaired them
+ * would be answering a question nobody asked.
  */
 export async function readStockToken(
   call: CallFn,
   token: string,
   options: ReadOptions = {},
 ): Promise<StockTokenState> {
-  const maxStaleness = options.maxStaleness ?? 26 * 60 * 60;
-  const corpActionWindow = options.corpActionWindow ?? 2 * 60 * 60;
+  const maxStaleness = requireSeconds("maxStaleness", options.maxStaleness ?? 26 * 60 * 60);
+  const corpActionWindow = requireSeconds(
+    "corpActionWindow",
+    options.corpActionWindow ?? 2 * 60 * 60,
+  );
   const feedDecimals = normaliseFeedDecimals(options.feedDecimals);
-  const now = options.now ?? Math.floor(Date.now() / 1000);
+  const now = requireSeconds("now", options.now ?? Math.floor(Date.now() / 1000));
 
   const [multiplierHex, pendingHex, effectiveHex, pausedHex, roundHex] = await Promise.all([
     safeCall(call, token, SELECTORS.uiMultiplier),
