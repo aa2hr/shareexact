@@ -144,8 +144,27 @@ contract ExactTransfer {
         executable = uiShares != 0 && raw != 0 && !unitMoving && dataState != DataState.SEQUENCER_DOWN;
     }
 
-    /// @notice Largest whole share amount `holder` can send without a shortfall.
-    /// @dev Observation-class: never reverts. An unreadable multiplier or a
+    /// @notice The full share value of `holder`'s balance, floored.
+    /// @dev A ceiling on what may be *asked for*, not an amount guaranteed to
+    ///      settle exactly. It returns `floor(rawBalance * multiplier / WAD)`;
+    ///      sending that number back needs `floor(uiShares * WAD / multiplier)`
+    ///      raw units, and the two floors only cancel when the multiplier
+    ///      divides WAD evenly.
+    ///
+    ///      How often that bites is not a footnote. At a multiplier of 1.0, 2.0
+    ///      or 4.0 the result is always exactly sendable. At NVDA's live
+    ///      multiplier, 1.000775159164630595, it is exactly sendable for no
+    ///      balance at all — every one loses 1 wei of a share — and at 1.5, for
+    ///      half of them. A caller sizing a send with this must therefore pass a
+    ///      `maxShortfall` of at least 1 or `transferShares` will revert
+    ///      `ShareShortfall`. That revert is correct: this is a capacity, not a
+    ///      quote.
+    ///
+    ///      This notice previously read "largest whole share amount `holder` can
+    ///      send without a shortfall", which is true only for the clean
+    ///      multipliers this contract exists to say you will not get.
+    ///
+    ///      Observation-class: never reverts. An unreadable multiplier or a
     ///      reverting `balanceOf` returns 0 rather than bubbling up — `quote`
     ///      already treats those as not-executable, and a view that throws when
     ///      the token is hostile is useless to an integrator sizing a send.
