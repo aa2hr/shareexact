@@ -219,6 +219,33 @@ function diff(prev, next) {
   return out;
 }
 
+/**
+ * Is this set of changes worth waking someone for?
+ *
+ * `state` crossing between FRESH and STALE is the market calendar, not a
+ * finding: it happens twice every weekend, and on 26 and 28 Sep it did exactly
+ * that and turned two scheduled runs red. An alarm that fires on a predictable
+ * event teaches its reader to ignore it, which is how the one that matters gets
+ * missed.
+ *
+ * Everything else still counts. Any movement in the unit fields is the event
+ * this script exists for, and `CORP_ACTION`, `ORACLE_PAUSED`, `SEQUENCER_DOWN`
+ * and `NO_FEED` are each worth a look on their own. The cost, stated plainly:
+ * a feed that stops printing mid-week looks exactly like a weekend from here
+ * and is now silent too. The JSONL record still has it, and `deploy:verify`
+ * reports every symbol's state.
+ *
+ * The record is unaffected either way — every observation is still written.
+ * This only decides what gets printed, and therefore what fails a scheduled run.
+ */
+const ROUTINE_STATES = new Set(["FRESH", "STALE"]);
+
+function newsworthy(changes) {
+  return changes.some((c) =>
+    c.field === "state" ? !(ROUTINE_STATES.has(c.from) && ROUTINE_STATES.has(c.to)) : true,
+  );
+}
+
 const fmt18 = (v) => {
   if (v == null) return "—";
   const s = String(v).padStart(19, "0");
@@ -329,7 +356,7 @@ async function tick(rows, last) {
             `  effectiveAt=${o.tokenEffectiveAt || 0}  paused=${o.oraclePaused}`,
         );
       }
-    } else if (changes.length > 0) {
+    } else if (changes.length > 0 && (!QUIET || newsworthy(changes))) {
       console.log(`\n${o.ts}  ${row.symbol}  block ${o.block}`);
       for (const l of headline(o, changes)) console.log(`  ${l}`);
       for (const c of changes) {
