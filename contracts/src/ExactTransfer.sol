@@ -148,26 +148,32 @@ contract ExactTransfer {
     /// @dev A ceiling on what may be *asked for*, not an amount guaranteed to
     ///      settle exactly. It returns `floor(rawBalance * multiplier / WAD)`;
     ///      sending that number back needs `floor(uiShares * WAD / multiplier)`
-    ///      raw units, and the two floors only cancel when the multiplier
-    ///      divides WAD evenly.
+    ///      raw units, and the two floors cancel exactly when `rawBalance` is a
+    ///      multiple of `WAD / gcd(multiplier, WAD)`.
     ///
-    ///      How often that bites is not a footnote. At a multiplier of 1.0, 2.0
-    ///      or 4.0 the result is always exactly sendable. At NVDA's live
-    ///      multiplier, 1.000775159164630595, it is exactly sendable for no
-    ///      balance at all — every one loses 1 wei of a share — and at 1.5, for
-    ///      half of them. A caller sizing a send with this must therefore pass a
-    ///      `maxShortfall` of at least 1 or `transferShares` will revert
-    ///      `ShareShortfall`. That revert is correct: this is a capacity, not a
+    ///      That period is 1 at a multiplier of 1.0, 2.0 or 4.0, so the result
+    ///      is always exactly sendable there, and 2 at 1.5, so half of balances
+    ///      are. At NVDA's live multiplier, 1.000775159164630595, it is 2e17: a
+    ///      balance of exactly 1.0 or 0.2 raw tokens round-trips, while a
+    ///      balance off that grid — which is every balance that came from a
+    ///      transfer rather than a round number — loses 1 wei of a share.
+    ///      Unless the caller knows it sits on that period, sizing a send with
+    ///      this needs `maxShortfall >= 1` or `transferShares` reverts
+    ///      `ShareShortfall`. The revert is correct: this is a capacity, not a
     ///      quote.
     ///
     ///      This notice previously read "largest whole share amount `holder` can
-    ///      send without a shortfall", which is true only for the clean
-    ///      multipliers this contract exists to say you will not get.
+    ///      send without a shortfall", which holds only on that period.
     ///
-    ///      Observation-class: never reverts. An unreadable multiplier or a
-    ///      reverting `balanceOf` returns 0 rather than bubbling up — `quote`
-    ///      already treats those as not-executable, and a view that throws when
-    ///      the token is hostile is useless to an integrator sizing a send.
+    ///      Observation-class, with one hole worth naming rather than hiding.
+    ///      An unreadable multiplier or a reverting `balanceOf` returns 0 rather
+    ///      than bubbling up, because a view that throws when the token is
+    ///      hostile is useless to an integrator sizing a send. But both inputs
+    ///      come from the token, and the final `Math.mulDiv` reverts once their
+    ///      product reaches `2**256 * WAD` — about 1.2e95, so roughly 3.4e47 on
+    ///      each side. `quote` bounds its own multiplication for exactly this
+    ///      reason; this function does not. Adding that bound changes the
+    ///      bytecode, so it waits for a redeploy instead of riding on a comment.
     function maxShares(address token, address holder) external view returns (uint256) {
         (uint256 current,,) = guard.multiplierOf(token);
         if (current == 0) return 0;
