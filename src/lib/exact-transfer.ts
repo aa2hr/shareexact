@@ -37,7 +37,7 @@ import {
   type ExactShareTransferEvent,
 } from "./abi.ts";
 import { parseDecimalToBigInt } from "./conversion.ts";
-import type { EthereumProvider } from "./wallet.ts";
+import { RH_CHAIN_ID, readChainId, type EthereumProvider } from "./wallet.ts";
 
 const WAD = 10n ** 18n;
 
@@ -287,6 +287,58 @@ export interface WaitOptions {
 }
 
 /**
+ * Raised when the wallet is not on the chain these numbers were read from.
+ *
+ * The chain was read once, when the wallet connected, and never again. A user
+ * who switches network in the wallet — or whose wallet switches itself, which
+ * several do when another tab asks — would then sign calldata built from one
+ * chain's multiplier and balance against a different chain's state. The token
+ * address usually holds nothing there, so the likely outcome is a confusing
+ * revert; the unlikely one is an address that holds something else entirely.
+ */
+export class WrongChainError extends PreflightError {
+  readonly expected: number;
+  readonly actual: number;
+
+  constructor(message: string, expected: number, actual: number) {
+    super(message);
+    this.expected = expected;
+    this.actual = actual;
+  }
+}
+
+/**
+ * Re-read the chain and refuse if it moved.
+ *
+ * Called immediately before each signature rather than once per send, because
+ * the gap that matters is the one between the user seeing a number and
+ * approving it — and on the guarded route that gap now includes waiting for an
+ * approval receipt, which is the longest this product has ever paused with a
+ * wallet open.
+ */
+async function requireChain(provider: EthereumProvider, expected: number): Promise<void> {
+  let actual: number;
+  try {
+    actual = await readChainId(provider);
+  } catch {
+    throw new WrongChainError(
+      "Could not read which chain the wallet is on. Nothing was sent.",
+      expected,
+      Number.NaN,
+    );
+  }
+  // NaN fails this comparison, which is the direction to fail in: a chain id we
+  // could not parse is not evidence of the right chain.
+  if (actual !== expected) {
+    throw new WrongChainError(
+      `The wallet is on chain ${Number.isFinite(actual) ? actual : "unknown"}, but these numbers were read from chain ${expected}. Switch the wallet back and try again. Nothing was sent.`,
+      expected,
+      actual,
+    );
+  }
+}
+
+/**
  * Raised when the approval was signed and submitted but has not landed, so the
  * transfer cannot be built yet. Carries the hash: the user signed something, and
  * an error message that hides it leaves them unable to look it up.
@@ -533,9 +585,12 @@ export async function sendExactTransfer(
     wait?: WaitOptions;
     /** See `preflightTransfer`. */
     exactTransfer?: string;
+    /** Chain these numbers belong to. Defaults to Robinhood Chain. */
+    expectedChainId?: number;
   },
 ): Promise<SendResult> {
   const helper = params.exactTransfer ?? EXACT_TRANSFER_ADDRESS;
+  const expectedChainId = params.expectedChainId ?? RH_CHAIN_ID;
   const notify = (phase: SendPhase) => {
     try {
       params.onPhase?.(phase);
@@ -544,6 +599,10 @@ export async function sendExactTransfer(
       // a transaction that may already be in flight.
     }
   };
+
+  // Before the reads, so the multiplier and the balance behind the quote come
+  // from the chain the transaction will execute on.
+  await requireChain(provider, expectedChainId);
 
   const pre = await preflightTransfer(provider, {
     token: params.token,
@@ -606,6 +665,7 @@ export async function sendExactTransfer(
     let approvalHash: string | undefined;
 
     if (allowance < pre.raw) {
+      await requireChain(provider, expectedChainId);
       notify({ kind: "approving" });
       approvalHash = (await provider.request({
         method: "eth_sendTransaction",
@@ -656,6 +716,9 @@ export async function sendExactTransfer(
     }
 
     const uiShares = parseDecimalToBigInt(params.amount, TOKEN_DECIMALS);
+    // The approval wait is the longest pause in this flow, so this is the check
+    // that earns its keep.
+    await requireChain(provider, expectedChainId);
     notify({ kind: "signing" });
     const hash = (await provider.request({
       method: "eth_sendTransaction",
@@ -721,6 +784,7 @@ export async function sendExactTransfer(
     };
   }
 
+  await requireChain(provider, expectedChainId);
   notify({ kind: "signing" });
   const hash = (await provider.request({
     method: "eth_sendTransaction",
