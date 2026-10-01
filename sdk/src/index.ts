@@ -276,16 +276,38 @@ export const isPriceable = (state: DataState): boolean => state === "FRESH";
 /**
  * True when a share conversion may be sent.
  *
- * A weekend `STALE` label does not block by itself. A scheduled unit change
- * does, and `state()` will not show it while the feed is stale or paused.
- * Pass `unitChangeImminent` from the token read. Passing only the label is
- * how a pending split was reported as executable.
+ * Three things have to hold, and each has been got wrong at least once:
+ *
+ *   - the chain has to be live, which is what `SEQUENCER_DOWN` means;
+ *   - no unit change may be about to land — and `dataState` will not show one
+ *     while the feed is `STALE` or the issuer has paused the oracle, because a
+ *     single-valued label has to pick an answer and price outranks unit inside
+ *     it. Passing only the label is how a pending split was once reported as
+ *     executable;
+ *   - and the ratio has to be readable at all.
+ *
+ * The third is why `multiplier` is here. A token whose `uiMultiplier()` cannot
+ * be read comes back as `0n`, `unitChangeImminent` is false for it, and the
+ * label can be anything — so without this check the predicate answered
+ * "executable" about a token the contract refuses outright:
+ * `ExactTransfer.transferShares` reverts with `UnitUnavailable`. A predicate
+ * that disagrees with the contract it exists to predict is worse than no
+ * predicate, because it gets believed.
+ *
+ * `StockTokenState` already has this shape, so pass the token read in whole.
  */
 export function isShareConversionExecutable(input: {
   dataState: DataState;
   unitChangeImminent: boolean;
+  /** Current ratio, 18-decimal fixed point. Zero means it could not be read. */
+  multiplier: bigint;
 }): boolean {
   if (input.dataState === "SEQUENCER_DOWN" || input.dataState === "CORP_ACTION") return false;
+  // Written as a positive test on purpose: a JavaScript caller compiled against
+  // the older two-field shape passes `undefined` here, this comparison is false,
+  // and the answer is "not executable". An absent field is not evidence that the
+  // unit is readable, and the safe direction is the same one the contract takes.
+  if (!(input.multiplier > 0n)) return false;
   return !input.unitChangeImminent;
 }
 

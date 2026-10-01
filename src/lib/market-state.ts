@@ -104,13 +104,25 @@ export function isTradeable(state: DataState): boolean {
  * True when a share conversion may be sent.
  *
  * `STALE` by itself does not block. `STALE` together with a scheduled unit
- * change does. The label hides the second fact, so pass it in.
+ * change does, and the label hides that second fact, so it is passed in.
+ *
+ * The third input is the ratio itself. A token whose `uiMultiplier()` cannot be
+ * read comes back as `0n`, `unitChangeImminent` is false for it, and the label
+ * can be anything — so without this check the predicate answered "executable"
+ * about a token `ExactTransfer.transferShares` refuses outright with
+ * `UnitUnavailable`. Fail closed here for the same reason the contract and the
+ * preflight do: an unreadable ratio is not evidence of a 1:1 token.
  */
 export function isShareConversionExecutable(input: {
   dataState: DataState;
   unitChangeImminent: boolean;
+  /** Current ratio, 18-decimal fixed point. Zero means it could not be read. */
+  multiplier: bigint;
 }): boolean {
   if (input.dataState === "SEQUENCER_DOWN" || input.dataState === "CORP_ACTION") return false;
+  // A positive test, so an omitted field (a JavaScript caller written against
+  // the older two-field shape) refuses rather than passes.
+  if (!(input.multiplier > 0n)) return false;
   return !input.unitChangeImminent;
 }
 
