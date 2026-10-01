@@ -21,11 +21,12 @@ name: corp-action watch
 
 on:
   schedule:
-    # Every ten minutes, offset off the hour. Scheduled workflows are queued,
-    # not guaranteed, and the top of the hour is the busiest slot — an offset
-    # measurably reduces skipped runs. The corporate-action window is two hours
-    # wide (corpActionWindow = 7200), so this samples it a dozen times.
-    - cron: "2,12,22,32,42,52 * * * *"
+    # Twice an hour, off the busy minutes. GitHub queues scheduled workflows
+    # rather than guaranteeing them, and throttles high-frequency crons hardest:
+    # a */10 schedule delivered about five runs a day between 26 Sep and 1 Oct,
+    # not 144. Asking for less gets more. The corporate-action window is two
+    # hours wide (corpActionWindow = 7200), so this still samples it.
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 concurrency:
