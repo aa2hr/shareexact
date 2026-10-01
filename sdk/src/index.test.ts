@@ -214,3 +214,53 @@ test("omitting the ratio refuses rather than passes", () => {
   >[0];
   assert.equal(isShareConversionExecutable(legacy), false);
 });
+
+/*//////////////////////////////////////////////////////////////
+                    ARGUMENTS ARE NOT TRUSTED
+//////////////////////////////////////////////////////////////*/
+
+test("a non-finite duration is refused instead of silently disabling the check", async () => {
+  // This is the whole point: `now - updatedAt > NaN` is false, so a feed that
+  // has not published in a week would have come back FRESH, with no error and
+  // nothing in the logs. The library would have been confidently wrong about
+  // the one thing it exists to be right about.
+  const call = mockCall({});
+  for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+    await assert.rejects(
+      () => readStockToken(call, TOKEN, { maxStaleness: bad }),
+      /maxStaleness/,
+      `maxStaleness ${bad} must be refused`,
+    );
+    await assert.rejects(
+      () => readStockToken(call, TOKEN, { corpActionWindow: bad }),
+      /corpActionWindow/,
+      `corpActionWindow ${bad} must be refused`,
+    );
+    await assert.rejects(() => readStockToken(call, TOKEN, { now: bad }), /now/);
+  }
+  await assert.rejects(
+    () => readStockToken(call, TOKEN, { maxStaleness: "3600" as unknown as number }),
+    /maxStaleness/,
+  );
+});
+
+test("arguments are checked before any call is made", async () => {
+  // A bad argument must not cost an RPC round trip, and must not half-read a
+  // token and then throw.
+  let calls = 0;
+  const counting: CallFn = async () => {
+    calls += 1;
+    return null;
+  };
+  await assert.rejects(() => readStockToken(counting, TOKEN, { maxStaleness: Number.NaN }));
+  assert.equal(calls, 0);
+});
+
+test("the ordinary durations still pass", async () => {
+  const state = await readStockToken(mockCall({}), TOKEN, {
+    maxStaleness: 93_600,
+    corpActionWindow: 0,
+    now: 1_790_000_000,
+  });
+  assert.equal(state.dataState, "NO_FEED");
+});
