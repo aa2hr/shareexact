@@ -79,7 +79,7 @@ test("STALE does not mean the unit is stable", () => {
   assert.equal(classify(weekend), "STALE");
   assert.equal(unitChangeImminent(weekend), false);
   assert.equal(
-    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: false }),
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: false, multiplier: WAD }),
     true,
   );
 
@@ -91,16 +91,16 @@ test("STALE does not mean the unit is stable", () => {
   assert.equal(classify(staleSplit), "STALE");
   assert.equal(unitChangeImminent(staleSplit), true);
   assert.equal(
-    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: true }),
+    isShareConversionExecutable({ dataState: "STALE", unitChangeImminent: true, multiplier: WAD }),
     false,
   );
-  assert.equal(isShareConversionExecutable({ dataState: "CORP_ACTION", unitChangeImminent: true }), false);
+  assert.equal(isShareConversionExecutable({ dataState: "CORP_ACTION", unitChangeImminent: true, multiplier: WAD }), false);
   assert.equal(
-    isShareConversionExecutable({ dataState: "SEQUENCER_DOWN", unitChangeImminent: false }),
+    isShareConversionExecutable({ dataState: "SEQUENCER_DOWN", unitChangeImminent: false, multiplier: WAD }),
     false,
   );
   assert.equal(
-    isShareConversionExecutable({ dataState: "ORACLE_PAUSED", unitChangeImminent: true }),
+    isShareConversionExecutable({ dataState: "ORACLE_PAUSED", unitChangeImminent: true, multiplier: WAD }),
     false,
   );
 });
@@ -184,4 +184,33 @@ test("future feed timestamp classifies as STALE through readStockToken", async (
   });
   const state = await readStockToken(call, TOKEN, { feed: FEED, now: NOW });
   assert.equal(state.dataState, "STALE");
+});
+
+test("a token whose ratio cannot be read is not executable, whatever the label says", () => {
+  // `multiplier: 0n` is "uiMultiplier() could not be read". The contract refuses
+  // such a token outright — `transferShares` reverts with `UnitUnavailable` —
+  // so the predicate that exists to predict the contract has to refuse too.
+  // Before this, FRESH with nothing pending and an unreadable ratio returned
+  // true, which is the one answer that gets a caller to sign.
+  for (const dataState of ["FRESH", "STALE", "ORACLE_PAUSED", "NO_FEED"] as const) {
+    assert.equal(
+      isShareConversionExecutable({ dataState, unitChangeImminent: false, multiplier: 0n }),
+      false,
+      `${dataState} with an unreadable ratio must not be executable`,
+    );
+  }
+  assert.equal(
+    isShareConversionExecutable({ dataState: "FRESH", unitChangeImminent: false, multiplier: WAD }),
+    true,
+  );
+});
+
+test("omitting the ratio refuses rather than passes", () => {
+  // TypeScript requires the field; JavaScript does not. An integration written
+  // against the older two-field shape must fail closed instead of keeping the
+  // bug it was written around.
+  const legacy = { dataState: "FRESH", unitChangeImminent: false } as unknown as Parameters<
+    typeof isShareConversionExecutable
+  >[0];
+  assert.equal(isShareConversionExecutable(legacy), false);
 });
