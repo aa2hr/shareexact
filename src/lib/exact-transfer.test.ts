@@ -6,6 +6,7 @@ import {
   PreflightError,
   ShortfallError,
   TransactionRevertedError,
+  WrongChainError,
   preflightTransfer,
   sendExactTransfer,
   waitForReceipt,
@@ -35,6 +36,7 @@ const TOKEN = "0x1111111111111111111111111111111111111111";
 const HOLDER = "0x2222222222222222222222222222222222222222";
 const RECIPIENT = "0x3333333333333333333333333333333333333333";
 const HELPER = "0x4444444444444444444444444444444444444444";
+const CHAIN = 4663;
 
 const SELECTOR = {
   uiMultiplier: "0xa60bf13d",
@@ -72,6 +74,11 @@ interface ReceiptStub {
 
 interface StubOptions {
   multiplier: bigint | null;
+  /** Chain ids returned by successive `eth_chainId` calls. The last one repeats,
+   *  so `[4663, 1]` models a wallet that switches network mid-flow. */
+  chainIds?: number[];
+  /** Make `eth_chainId` throw. */
+  chainIdThrows?: boolean;
   balance?: bigint;
   pending?: bigint;
   effectiveAt?: bigint;
@@ -97,6 +104,8 @@ function stubProvider(options: StubOptions) {
   const multiplier = options.multiplier ?? WAD;
   let allowance = options.allowance ?? 0n;
   let flaky = options.flakyPolls ?? 0;
+  const chainIds = options.chainIds ?? [CHAIN];
+  let chainReads = 0;
 
   const hashFor = (index: number) => `0x${(index + 1).toString(16).padStart(64, "0")}`;
 
@@ -137,6 +146,12 @@ function stubProvider(options: StubOptions) {
 
   const provider = {
     async request({ method, params }: { method: string; params?: unknown[] }) {
+      if (method === "eth_chainId") {
+        if (options.chainIdThrows) throw new Error("wallet refused eth_chainId");
+        const id = chainIds[Math.min(chainReads, chainIds.length - 1)];
+        chainReads += 1;
+        return `0x${id.toString(16)}`;
+      }
       if (method === "eth_call") {
         if (options.throwOnCall) throw new Error("rpc exploded");
         const call = (params?.[0] ?? {}) as { data?: string };
@@ -186,7 +201,7 @@ function stubProvider(options: StubOptions) {
       throw new Error(`unexpected method ${method}`);
     },
   };
-  return { provider, sent, txs, hashFor };
+  return { provider, sent, txs, hashFor, chainReadCount: () => chainReads };
 }
 
 /** Receipts are served immediately in these tests; the clock is only here so a
@@ -514,4 +529,81 @@ test("waitForReceipt returns null for a transaction that has not landed", async 
   const { provider } = stubProvider({ multiplier: WAD });
   const receipt = await waitForReceipt(provider, `0x${"ab".repeat(32)}`, FAST);
   assert.equal(receipt, null);
+});
+
+/*//////////////////////////////////////////////////////////////
+                    THE CHAIN UNDER THE NUMBERS
+//////////////////////////////////////////////////////////////*/
+
+test("a wallet that switches chain mid-flow is caught before the signature", async () => {
+  // First read is Robinhood Chain, so the quote is built. By the time the
+  // transfer is about to be signed the wallet has moved, and the calldata would
+  // be executed against a chain where that token address means something else,
+  // or nothing. Chain id used to be read once, at connect, and never again.
+  const { provider, sent } = stubProvider({ multiplier: 4n * WAD, chainIds: [CHAIN, 1] });
+  await assert.rejects(
+    () =>
+      sendExactTransfer(provider, {
+        token: TOKEN,
+        from: HOLDER,
+        to: RECIPIENT,
+        amount: "1",
+        wait: FAST,
+      }),
+    WrongChainError,
+  );
+  assert.equal(sent.length, 0, "nothing may be signed on the wrong chain");
+});
+
+test("the chain is re-read before every signature, not once per send", async () => {
+  // Guarded route: once before the reads, once before the approval, once before
+  // the transfer. The last is the one that matters, because the approval wait
+  // sits between it and everything the user looked at.
+  const { provider, chainReadCount } = stubProvider({ multiplier: 4n * WAD });
+  await sendExactTransfer(provider, {
+    token: TOKEN,
+    from: HOLDER,
+    to: RECIPIENT,
+    amount: "1",
+    exactTransfer: HELPER,
+    wait: FAST,
+  });
+  assert.equal(chainReadCount(), 3);
+});
+
+test("the chain moving during the approval wait stops the transfer", async () => {
+  const { provider, sent, txs } = stubProvider({
+    multiplier: 4n * WAD,
+    chainIds: [CHAIN, CHAIN, 1],
+  });
+  await assert.rejects(
+    () =>
+      sendExactTransfer(provider, {
+        token: TOKEN,
+        from: HOLDER,
+        to: RECIPIENT,
+        amount: "1",
+        exactTransfer: HELPER,
+        wait: FAST,
+      }),
+    WrongChainError,
+  );
+  assert.equal(sent.length, 1, "the approval was signed; the transfer must not be");
+  assert.ok(txs[0].data.startsWith(SELECTORS.approve));
+});
+
+test("an unreadable chain id refuses rather than assumes", async () => {
+  const { provider, sent } = stubProvider({ multiplier: 4n * WAD, chainIdThrows: true });
+  await assert.rejects(
+    () =>
+      sendExactTransfer(provider, {
+        token: TOKEN,
+        from: HOLDER,
+        to: RECIPIENT,
+        amount: "1",
+        wait: FAST,
+      }),
+    WrongChainError,
+  );
+  assert.equal(sent.length, 0);
 });
