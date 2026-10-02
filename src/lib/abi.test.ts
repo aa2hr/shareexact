@@ -41,9 +41,11 @@ test("address is lower-cased and left-padded", () => {
   assert.ok(data.includes("000000000000000000000000abcdef"));
 });
 
-test("padUint rejects negatives", () => {
+test("padUint rejects negatives and values that do not fit a uint256", () => {
   assert.throws(() => padUint(-1n));
+  assert.throws(() => padUint(1n << 256n));
   assert.equal(padUint(255n).slice(-2), "ff");
+  assert.equal(padUint((1n << 256n) - 1n).length, 64);
 });
 
 test("decodeUint tolerates empty and short data", () => {

@@ -161,6 +161,11 @@ export function TransferView({ provider, address }: Props) {
   const recipientValid = sendingToSelf || ADDRESS.test(toTrimmed);
   const recipient = sendingToSelf ? address ?? "" : toTrimmed;
   const shortfall = pre?.shortfall ?? 0n;
+  // The tick is consent to the loss on screen, not to whatever the next read
+  // returns. Clear it when that loss changes.
+  useEffect(() => {
+    setAcceptShortfall(false);
+  }, [shortfall]);
   const shortfallCleared = shortfall === 0n || acceptShortfall;
   const settled = result?.settled ?? null;
   const canSend =

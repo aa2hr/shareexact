@@ -168,6 +168,22 @@ async function safeCall(call: CallFn, to: string, data: string): Promise<string 
   }
 }
 
+function requireDurations(now: number, maxStaleness: number, corpActionWindow: number): void {
+  // `now - updatedAt > NaN` is false, so a non-finite bound used to come back
+  // FRESH. Refuse instead of answering.
+  if (
+    !Number.isFinite(now) ||
+    !Number.isFinite(maxStaleness) ||
+    maxStaleness < 0 ||
+    !Number.isFinite(corpActionWindow) ||
+    corpActionWindow < 0
+  ) {
+    throw new Error(
+      "now, maxStaleness and corpActionWindow must be finite, non-negative numbers of seconds",
+    );
+  }
+}
+
 export function classifyDataState(input: {
   sequencerOk: boolean;
   hasFeed: boolean;
@@ -181,12 +197,13 @@ export function classifyDataState(input: {
   pendingMultiplier: bigint | null;
   corpActionWindow: number;
 }): DataState {
+  requireDurations(input.now, input.maxStaleness, input.corpActionWindow);
   if (!input.sequencerOk) return "SEQUENCER_DOWN";
   if (!input.hasFeed) {
     if (unitChangeImminent(input)) return "CORP_ACTION";
     return "NO_FEED";
   }
-  if (input.price === null || input.price <= 0 || !input.updatedAt) return "STALE";
+  if (input.price === null || !Number.isFinite(input.price) || input.price <= 0 || !input.updatedAt) return "STALE";
   // A timestamp in the future is a broken or hostile feed, not a fresher one.
   // Identical to ShareExactGuard._evaluate and src/lib/market-state.ts.
   if (input.updatedAt > input.now) return "STALE";
@@ -197,6 +214,7 @@ export function classifyDataState(input: {
 }
 
 export function unitChangeImminent(input: Parameters<typeof classifyDataState>[0]): boolean {
+  requireDurations(input.now, input.maxStaleness, input.corpActionWindow);
   // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
   // multiplier fails closed for any future effectiveAt, before the window.
   if (input.effectiveAt == null || input.effectiveAt <= input.now) return false;

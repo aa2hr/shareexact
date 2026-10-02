@@ -33,9 +33,10 @@ import { loadRhjAssets, type RegistryAsset } from "./scan";
  *
  * plus the L2 sequencer uptime feed once for the whole batch.
  *
- * Everything degrades. A token that does not implement ERC-8056 reports a 1.0
- * multiplier. A feed that is unreachable reports STALE. Nothing here throws,
- * and nothing here substitutes a made-up number for a missing one.
+ * Everything degrades. A token whose `uiMultiplier()` cannot be read reports
+ * the unit as unavailable — it is never filled in as 1.0. A feed that is
+ * unreachable reports STALE. Nothing here throws, and nothing here substitutes
+ * a made-up number for a missing one.
  */
 
 export interface AssetOracleState {

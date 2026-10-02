@@ -58,6 +58,26 @@ test("SDK classifier matches the contract cases", () => {
   );
 });
 
+test("a non-finite price is stale, and a non-finite window is refused", () => {
+  assert.equal(classify({ price: Number.NaN }), "STALE");
+  assert.throws(() => classify({ maxStaleness: Number.NaN }));
+  assert.throws(() =>
+    unitChangeImminent({
+      sequencerOk: true,
+      hasFeed: true,
+      updatedAt: NOW - 60,
+      price: 178.4,
+      now: NOW,
+      maxStaleness: 26 * 3600,
+      oraclePaused: false,
+      effectiveAt: null,
+      multiplier: WAD,
+      pendingMultiplier: WAD,
+      corpActionWindow: Number.NaN,
+    }),
+  );
+});
+
 test("a feed timestamp in the future is stale, not maximally fresh", () => {
   assert.equal(classify({ updatedAt: NOW + 3600 }), "STALE");
 });

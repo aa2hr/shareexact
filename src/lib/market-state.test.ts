@@ -129,6 +129,12 @@ test("a stale price does not hide a pending unit change from the send check", ()
   );
 });
 
+test("a non-finite price is stale, and a non-finite window is refused", () => {
+  assert.equal(classifyDataState(input({ price: Number.NaN })), "STALE");
+  assert.throws(() => classifyDataState(input({ maxStaleness: Number.NaN })));
+  assert.throws(() => unitChangeImminent(input({ corpActionWindow: Number.NaN })));
+});
+
 test("a feed timestamp in the future is stale, not maximally fresh", () => {
   assert.equal(classifyDataState(input({ updatedAt: NOW + 3600 })), "STALE");
 });

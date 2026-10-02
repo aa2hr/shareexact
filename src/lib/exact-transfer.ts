@@ -316,6 +316,10 @@ export class WrongChainError extends PreflightError {
  * approval receipt, which is the longest this product has ever paused with a
  * wallet open.
  */
+function hexChainId(chainId: number): string {
+  return `0x${chainId.toString(16)}`;
+}
+
 async function requireChain(provider: EthereumProvider, expected: number): Promise<void> {
   let actual: number;
   try {
@@ -673,6 +677,7 @@ export async function sendExactTransfer(
           {
             from: params.from,
             to: params.token,
+            chainId: hexChainId(expectedChainId),
             data: encodeApprove(helper, pre.raw),
           },
         ],
@@ -726,6 +731,7 @@ export async function sendExactTransfer(
         {
           from: params.from,
           to: helper,
+          chainId: hexChainId(expectedChainId),
           data: encodeTransferShares(
             params.token,
             params.to,
@@ -792,6 +798,7 @@ export async function sendExactTransfer(
       {
         from: params.from,
         to: params.token,
+        chainId: hexChainId(expectedChainId),
         data: encodeTransfer(params.to, pre.raw),
       },
     ],

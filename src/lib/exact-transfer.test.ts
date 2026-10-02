@@ -234,6 +234,8 @@ test("an exactly representable amount signs and moves the right raw units", asyn
   assert.equal(result.status, "confirmed");
   assert.equal(result.settled?.raw, WAD / 4n);
   assert.equal(sent.length, 1);
+  const signed = (sent[0].params as [{ chainId?: string }])[0];
+  assert.equal(signed.chainId, "0x1237");
 });
 
 test("preflight route refuses a shortfall the caller did not accept", async () => {

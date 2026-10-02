@@ -52,7 +52,24 @@ export interface ClassifyInput {
   corpActionWindow: number;
 }
 
+function requireDurations(now: number, maxStaleness: number, corpActionWindow: number): void {
+  // `now - updatedAt > NaN` is false, so a non-finite bound used to come back
+  // FRESH. Refuse instead of answering.
+  if (
+    !Number.isFinite(now) ||
+    !Number.isFinite(maxStaleness) ||
+    maxStaleness < 0 ||
+    !Number.isFinite(corpActionWindow) ||
+    corpActionWindow < 0
+  ) {
+    throw new Error(
+      "now, maxStaleness and corpActionWindow must be finite, non-negative numbers of seconds",
+    );
+  }
+}
+
 export function classifyDataState(input: ClassifyInput): DataState {
+  requireDurations(input.now, input.maxStaleness, input.corpActionWindow);
   // 1. Chain liveness. Nothing else is meaningful while the sequencer is down.
   if (!input.sequencerOk) return "SEQUENCER_DOWN";
 
@@ -64,8 +81,15 @@ export function classifyDataState(input: ClassifyInput): DataState {
     return "NO_FEED";
   }
 
-  // 3. A missing or non-positive answer is indistinguishable from a dead feed.
-  if (input.price === null || input.price <= 0 || !input.updatedAt) return "STALE";
+  // 3. A missing, non-finite or non-positive answer is indistinguishable from a dead feed.
+  if (
+    input.price === null ||
+    !Number.isFinite(input.price) ||
+    input.price <= 0 ||
+    !input.updatedAt
+  ) {
+    return "STALE";
+  }
 
   // 3b. A timestamp in the future is a broken or hostile feed, not a fresher
   //     one. Mirrors the same check in ShareExactGuard._evaluate.
@@ -84,6 +108,7 @@ export function classifyDataState(input: ClassifyInput): DataState {
 }
 
 export function unitChangeImminent(input: ClassifyInput): boolean {
+  requireDurations(input.now, input.maxStaleness, input.corpActionWindow);
   // Same order as ShareExactGuard._corpActionImminent. An unreadable pending
   // multiplier fails closed for any future effectiveAt, before the window.
   // The window applies only once both multipliers can be compared.

@@ -37,6 +37,10 @@ export function padAddress(address: string): string {
 
 export function padUint(value: bigint): string {
   if (value < 0n) throw new Error("padUint: negative");
+  // A longer hex string is not a wider word. The ABI reader takes 32 bytes and
+  // treats whatever follows as the next argument, so an oversized value would
+  // be signed as a different, smaller one.
+  if (value >> 256n !== 0n) throw new Error("padUint: exceeds uint256");
   return value.toString(16).padStart(64, "0");
 }
 
